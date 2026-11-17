@@ -1069,7 +1069,7 @@ body.mobile .start small, body.mobile .btn small { display: none; }
 @media (max-width: 900px) {
   .screen { padding: 12px 12px 10px; gap: 10px; }
   .brand { gap: 10px; }
-  .logo { font-size: 24px; gap: 8px; }
+  .logo { font-size: min(24px, 6.2vw); gap: 8px; }
   .logo-apple { width: 34px; height: 34px; }
   .sub { display: none; }
   .menu-body { grid-template-columns: 1fr; overflow-y: auto; gap: 12px; }
@@ -1260,8 +1260,10 @@ body.mobile .search-box input { font-size: 16px; }
 /* 가로 스크롤 방지 : 세로로만 스크롤되는 영역은 가로 넘침을 잘라낸다 (폰의 소수점 픽셀 · 터치 후 남는 hover 효과 대비) */
 .song-list { overflow-x: hidden; }
 @media (max-width: 900px) { .menu-body { overflow-x: hidden; } }
-body.mobile .menu-body, body.mobile .detail { overflow-x: hidden; }
+body.mobile .menu-body { overflow-x: hidden; }
 @media (hover: none) {
   .song-item:hover { transform: none; }
   .song-item.sel:hover { transform: scale(1.02); }
 }
+/* 폰 글꼴 크기를 크게 해 둬도 패널이 화면보다 넓어지지 않게 (그리드 칸이 내용 최소 폭에 밀리지 않도록) */
+.menu-body > * { min-width: 0; }
