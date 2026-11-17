@@ -19,20 +19,25 @@
     } catch (e) { return false; }
   })();
   if (IS_MOBILE) document.body.classList.add('mobile');
-  const settings = Object.assign({ keyMode: IS_MOBILE ? '4k' : '7k', preview: true, vibrate: true, speed: 5.5, offset: 0, music: 0.8, sfx: 0.6, auto: false, skin: DEFAULT_SKIN, hitSound: 'snare' }, store.get('rm_settings', {}));
+  const settings = Object.assign({ laneAlpha: 1, keyMode: IS_MOBILE ? '4k' : '7k', preview: true, vibrate: true, speed: 5.5, offset: 0, music: 0.8, sfx: 0.6, auto: false, skin: DEFAULT_SKIN, hitSound: 'snare' }, store.get('rm_settings', {}));
   const bests = store.get('rm_best', {});
   const ytList = store.get('rm_yt', []);          // 유튜브 곡 목록 (영상 ID · BPM · 첫 박 ...)
   const customCharts = store.get('rm_charts', {}); // 녹화로 만든 채보 : "곡ID|난이도" → chart
   let lastStartOpts = {};
   const ytRemoved = store.get('rm_yt_removed', []); // 사용자가 지운 샘플 곡
-  // 샘플 : Mrs. GREEN APPLE 공식 MV 20곡 (js/songdata.js 의 실측 BPM · 첫 박 · 소리 위치로 채보 설계)
-  const SAMPLE_SONGS = (typeof SONG_DATA !== 'undefined' ? SONG_DATA : []).map((d) => ({ ...d, artist: 'Mrs. GREEN APPLE', designed: true }));
+  // 샘플 : Mrs. GREEN APPLE 공식 MV (조회수 순). js/songdata.js 에는 목록용 요약만 있고,
+  // 채보 설계에 쓰는 곡별 노트 데이터(songs/<videoId>.json)는 곡을 고를 때 불러온다.
+  const SAMPLE_SONGS = (typeof SONG_INDEX !== 'undefined' ? SONG_INDEX : []).map((d) => ({ ...d, artist: 'Mrs. GREEN APPLE', designed: true }));
   // 예전에 탭으로 맞춰 저장해 둔 샘플 곡 설정은 실측 데이터로 대체
   for (let i = ytList.length - 1; i >= 0; i--) if (SAMPLE_SONGS.some((d) => d.videoId === ytList[i].videoId)) ytList.splice(i, 1);
   store.set('rm_yt', ytList);
   let modalOpen = false;
   const songs = [];
   let sel = 0;
+  let view = [];                                   // 검색 · 정렬 · 즐겨찾기를 거친 목록 (songs 의 번호)
+  const favs = new Set(store.get('rm_fav', []));   // 즐겨찾기한 곡 id
+  const listOpt = Object.assign({ sort: 'pop', fav: false }, store.get('rm_list', {}));
+  let searchQ = '';
   let diff = store.get('rm_diff', 'NORMAL');
   if (!DIFFS.includes(diff)) diff = 'NORMAL';
   let screen = 'menu';
@@ -102,16 +107,59 @@
   }
 
   /* ---------------- 곡 목록 / 상세 ---------------- */
+  // 검색용 정규화 : 대소문자 · 전각/반각 · 히라가나/가타카나 · 공백과 기호 차이를 무시
+  const norm = (str) => String(str || '').normalize('NFKC').toLowerCase()
+    .replace(/[ぁ-ゖ]/g, (c) => String.fromCharCode(c.charCodeAt(0) + 0x60))
+    .replace(/[\s・·.,!?！？'’"“”\-_~〜ー]/g, '');
+  const levelOf = (s) => { const c = s.charts && s.charts[diff]; return c ? c.level : 0; };
+  const SORTS = {
+    pop: null,
+    title: (a, b) => a.title.localeCompare(b.title, 'ja'),
+    bpmUp: (a, b) => (a.bpm || 999) - (b.bpm || 999),
+    bpmDown: (a, b) => (b.bpm || 0) - (a.bpm || 0),
+    lvUp: (a, b) => (levelOf(a) || 99) - (levelOf(b) || 99),
+    lvDown: (a, b) => levelOf(b) - levelOf(a),
+  };
+  function computeView() {
+    const q = norm(searchQ);
+    view = songs.map((_, i) => i).filter((i) => {
+      const s = songs[i];
+      if (listOpt.fav && !favs.has(s.id)) return false;
+      if (!q) return true;
+      if (!s._key) s._key = norm(`${s.title} ${s.alias || ''} ${s.artist} ${T(s.artist)}`);
+      return s._key.includes(q);
+    });
+    const cmp = SORTS[listOpt.sort];
+    if (cmp) view.sort((a, b) => cmp(songs[a], songs[b]) || a - b);
+  }
   function renderSongList() {
+    computeView();
     const ul = $('#songList');
-    ul.innerHTML = songs.map((s, i) => `
+    ul.innerHTML = view.map((i) => {
+      const s = songs[i], fav = favs.has(s.id), lv = levelOf(s);
+      return `
       <li class="song-item ${i === sel ? 'sel' : ''}" data-i="${i}" style="--h:${s.hue}">
         <div class="thumb">${esc(s.title.slice(0, 1).toUpperCase())}</div>
         <div class="info"><b>${s.yt ? '<i class="yt-ico yt-tag"></i>' : ''}${esc(s.title)}</b><span>${esc(T(s.artist))}</span></div>
-        <div class="meta">${s.loading ? '<i class="mini-spin"></i>' : s.needsSync ? `${s.bpm ? Math.round(s.bpm) + ' BPM' : ''}<br><span class="need">${T('첫 박 설정')}</span>` : `${s.bpm ? Math.round(s.bpm) + ' BPM' : ''}<br>${fmtTime(s.duration)}`}</div>
-      </li>`).join('');
+        <div class="meta">${s.loading ? '<i class="mini-spin"></i>' : s.needsSync ? `${s.bpm ? Math.round(s.bpm) + ' BPM' : ''}<br><span class="need">${T('첫 박 설정')}</span>` : `${s.bpm ? Math.round(s.bpm) + ' BPM' : ''}<br>${lv ? `Lv.${lv} · ` : ''}${fmtTime(s.duration)}`}</div>
+        <button type="button" class="fav-btn ${fav ? 'on' : ''}" data-fav="${i}" aria-pressed="${fav}" title="${T('즐겨찾기')}">${fav ? '★' : '☆'}</button>
+      </li>`;
+    }).join('') || `<li class="song-empty">${listOpt.fav && !favs.size ? T('☆ 를 눌러 좋아하는 곡을 즐겨찾기에 담아 보세요') : T('조건에 맞는 곡이 없어요')}</li>`;
+    $('#songCount').textContent = T('{n}곡', { n: view.length });
     const cur = ul.querySelector('.sel');
     if (cur) cur.scrollIntoView({ block: 'nearest' });
+  }
+  // 필터를 바꿨는데 고른 곡이 목록에서 빠졌으면 목록의 첫 곡을 고른다
+  function refilter() {
+    computeView();
+    if (view.length && !view.includes(sel)) selectSong(view[0]);
+    else renderSongList();
+  }
+  function stepSong(d) {
+    computeView();
+    if (!view.length) return;
+    const p = view.indexOf(sel);
+    selectSong(view[p < 0 ? 0 : (p + d + view.length) % view.length]);
   }
 
   function updateDetail() {
@@ -153,21 +201,10 @@
   window.addEventListener('pointerdown', markActed, true);
   window.addEventListener('keydown', markActed, true);
   function highlightOf(s) {
+    // 샘플 곡은 songdata.js 의 hl (가장 음량이 큰 8마디 = 대개 후렴) 을 쓴다
     if (s.hl !== undefined) return s.hl;
     let t = (s.duration || 60) * 0.33;
-    const D = s.designData;
-    if (D) {
-      // 가장 음량이 큰 8마디 (= 대개 후렴) 시작점
-      const g16 = 60 / D.bpm / 4, win = 128;
-      const lo = Math.max(0, Math.floor((D.start - D.e0) / g16)), hi = Math.min(D.e.length - win, Math.floor((D.end - D.e0) / g16) - win);
-      let best = -1, bi = lo, sum = 0;
-      for (let i = lo; i < lo + win && i < D.e.length; i++) sum += D.e.charCodeAt(i) - 48;
-      for (let i = lo; i <= hi; i++) {
-        if (i > lo) sum += (D.e.charCodeAt(i + win - 1) - 48) - (D.e.charCodeAt(i - 1) - 48);
-        if ((i - lo) % 16 === 0 && sum > best) { best = sum; bi = i; }
-      }
-      t = Math.max(0, D.e0 + bi * g16 - 0.3);
-    } else if (s.demo) t = 20 * 4 * 60 / 140;
+    if (s.demo) t = 20 * 4 * 60 / 140;
     s.hl = t;
     return t;
   }
@@ -206,10 +243,12 @@
     renderSongList();
     updateDetail();
     schedulePreview();
+    ensureSongData(songs[sel]).catch(() => {});
   }
   function setDiff(d) {
     diff = d;
     store.set('rm_diff', d);
+    renderSongList();
     updateDetail();
   }
 
@@ -232,6 +271,7 @@
     bind('#setOffset', 'offset', (v) => `${v > 0 ? '+' : ''}${v}ms`, (v) => parseInt(v, 10));
     bind('#setMusic', 'music', (v) => `${Math.round(v * 100)}%`, parseFloat);
     bind('#setSfx', 'sfx', (v) => `${Math.round(v * 100)}%`, parseFloat);
+    bind('#setLane', 'laneAlpha', (v) => `${Math.round(v * 100)}%`, parseFloat);
     renderSkins();
     renderKeyguide();
     renderModeBtns();
@@ -481,13 +521,43 @@
   /* ---------------- 녹화 채보 ---------------- */
   // 자동 채보 위에 녹화한 채보(있으면)를 덮어씌운다
   function autoFor(song) {
-    if (settings.keyMode !== '4k') return song.auto7;
-    if (!song.auto4) song.auto4 = song.designData ? ChartGen.designAll(song.designData, song.seed, 4) : ChartGen.allTo4k(song.auto7);
+    const four = settings.keyMode === '4k';
+    if (song.designed) {
+      // 노트 데이터를 아직 안 불러왔으면 목록용 요약(레벨 · 노트 수)만 보여준다
+      if (!song.designData) return stubCharts(song.idx, four ? '4k' : '7k');
+      const k = four ? 'dz4' : 'dz7';
+      if (!song[k]) song[k] = ChartGen.designAll(song.designData, song.seed, four ? 4 : 7);
+      return song[k];
+    }
+    if (!four) return song.auto7;
+    if (!song.auto4) song.auto4 = ChartGen.allTo4k(song.auto7);
     return song.auto4;
   }
+  function stubCharts(d, mode) {
+    const out = {};
+    const lv = d.lv && d.lv[mode];
+    if (lv) for (const k of DIFFS) if (lv[k]) out[k] = { level: lv[k][0], count: lv[k][1], holds: lv[k][2], stub: true };
+    return out;
+  }
+  // 샘플 곡의 노트 데이터(songs/<videoId>.json)를 불러와 채보를 만든다 (한 번만)
+  function ensureSongData(song) {
+    if (!song || !song.designed || song.designData) return Promise.resolve(song);
+    if (!song.dataP) {
+      song.dataP = fetch(`songs/${song.yt.videoId}.json`)
+        .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
+        .then((j) => {
+          song.designData = { ...song.idx, e: j.e, on: j.on };
+          applyCustom(song);
+          if (songs[sel] === song && screen === 'menu') updateDetail();
+          return song;
+        })
+        .catch((e) => { song.dataP = null; throw e; });
+    }
+    return song.dataP;
+  }
   function applyCustom(song) {
-    if (!song.charts && !song.auto7) return;
-    if (!song.auto7) song.auto7 = song.charts;
+    if (!song.charts && !song.auto7 && !song.designed) return;
+    if (!song.auto7 && !song.designed) song.auto7 = song.charts;
     song.autoCharts = autoFor(song);
     song.charts = { ...song.autoCharts };
     song.custom = {};
@@ -536,9 +606,8 @@
       const song = {
         id, yt: { videoId: d.videoId }, title: d.title, artist: d.artist, hue: seed % 360, bpm: d.bpm,
         grid: d.grid ? { bpm: d.bpm, offset: d.offset } : null, duration: d.dur, sample: true, designed: true, needsSync: false,
-        designData: d, seed,
+        idx: d, alias: d.alias, hl: d.hl, seed,
       };
-      song.charts = ChartGen.designAll(d, seed);
       applyCustom(song);
       return song;
     }
@@ -625,6 +694,19 @@
     opts = opts && opts.record ? { record: true } : {};
     const s = songs[sel];
     if (!s || s.loading || !s.charts || starting) return;
+    if (s.designed && !s.designData) {
+      // 노트 데이터가 아직이면 불러온 뒤 시작
+      starting = true;
+      setLoading(T('채보 불러오는 중...'), 0.05);
+      try { await ensureSongData(s); } catch (e) {
+        console.error(e);
+        toast(T('채보 데이터를 불러오지 못했어요'));
+        starting = false; hideLoading();
+        return;
+      }
+      starting = false; hideLoading();
+      if (s !== songs[sel] || screen !== 'menu') return;
+    }
     if (!opts.record && !s.charts[diff]) {
       if (s.yt) openYtModal(s); else toast(T('이 난이도는 채보가 없어요'));
       return;
@@ -803,8 +885,8 @@
       if (e.code === 'Space') e.preventDefault();
       const onInput = document.activeElement && document.activeElement.tagName === 'INPUT';
       if (onInput && (e.code === 'ArrowLeft' || e.code === 'ArrowRight' || e.code === 'ArrowUp' || e.code === 'ArrowDown')) return;
-      if (e.code === 'ArrowUp') { e.preventDefault(); selectSong(sel - 1); }
-      else if (e.code === 'ArrowDown') { e.preventDefault(); selectSong(sel + 1); }
+      if (e.code === 'ArrowUp') { e.preventDefault(); stepSong(-1); }
+      else if (e.code === 'ArrowDown') { e.preventDefault(); stepSong(1); }
       else if (e.code === 'ArrowLeft') { e.preventDefault(); setDiff(DIFFS[Math.max(0, DIFFS.indexOf(diff) - 1)]); }
       else if (e.code === 'ArrowRight') { e.preventDefault(); setDiff(DIFFS[Math.min(2, DIFFS.indexOf(diff) + 1)]); }
       else if (e.code === 'Enter') { e.preventDefault(); startGame(); }
@@ -851,10 +933,37 @@
 
   /* ---------------- UI 바인딩 ---------------- */
   $('#songList').addEventListener('click', (e) => {
+    const fb = e.target.closest('[data-fav]');
+    if (fb) {
+      // 즐겨찾기 ☆ 토글 (곡 선택은 바꾸지 않음)
+      const s = songs[+fb.dataset.fav];
+      if (!s) return;
+      if (favs.has(s.id)) favs.delete(s.id); else favs.add(s.id);
+      store.set('rm_fav', [...favs]);
+      if (listOpt.fav) refilter(); else renderSongList();
+      return;
+    }
     const li = e.target.closest('.song-item');
     if (li) { const i = +li.dataset.i; if (i === sel && !previewOn) { userActed = true; schedulePreview(); } else selectSong(i); }
   });
-  $('#songList').addEventListener('dblclick', (e) => { if (e.target.closest('.song-item')) startGame(); });
+  $('#songList').addEventListener('dblclick', (e) => { if (e.target.closest('.song-item') && !e.target.closest('[data-fav]')) startGame(); });
+  // 검색 · 정렬 · 즐겨찾기만 보기
+  const searchEl = $('#songSearch');
+  searchEl.addEventListener('input', () => { searchQ = searchEl.value; refilter(); });
+  searchEl.addEventListener('keydown', (e) => {
+    if (e.code === 'Escape') {
+      e.stopPropagation();
+      if (searchEl.value) { searchEl.value = ''; searchQ = ''; refilter(); } else searchEl.blur();
+    } else if (e.code === 'Enter') { e.preventDefault(); searchEl.blur(); }
+  });
+  const sortEl = $('#songSort');
+  if (!(listOpt.sort in SORTS)) listOpt.sort = 'pop';
+  sortEl.value = listOpt.sort;
+  sortEl.addEventListener('change', () => { listOpt.sort = sortEl.value; store.set('rm_list', listOpt); renderSongList(); sortEl.blur(); });
+  const favEl = $('#favOnly');
+  const showFav = () => { favEl.classList.toggle('on', listOpt.fav); favEl.setAttribute('aria-pressed', String(listOpt.fav)); };
+  showFav();
+  favEl.addEventListener('click', () => { listOpt.fav = !listOpt.fav; store.set('rm_list', listOpt); showFav(); refilter(); });
   document.querySelectorAll('.diff').forEach((b) => b.addEventListener('click', () => setDiff(b.dataset.d)));
   document.querySelectorAll('[data-start]').forEach((b) => b.addEventListener('click', () => startGame()));
   $('#addSongBtn').addEventListener('click', () => $('#fileInput').click());

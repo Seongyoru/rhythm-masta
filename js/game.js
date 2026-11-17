@@ -1056,7 +1056,7 @@ class RhythmGame {
     if (this.song && this.song.yt && this.state !== 'idle') {
       // 뒤에 깔린 흐린 유튜브 영상이 보이도록 반투명하게만 물들인다
       g.clearRect(0, 0, W, H);
-      g.globalAlpha = this.sk.ink === '#ffffff' ? 0.35 : 0.28;
+      g.globalAlpha = this.sk.ink === '#ffffff' ? 0.2 : 0.15;
       g.fillStyle = this.bgGrad;
       g.fillRect(0, 0, W, H);
       g.globalAlpha = 1;
@@ -1066,7 +1066,7 @@ class RhythmGame {
     }
     // 스킨 장식 레이어
     if (this.deco) {
-      g.globalAlpha = this.song && this.song.yt && this.state !== 'idle' ? 0.35 : 1;
+      g.globalAlpha = this.song && this.song.yt && this.state !== 'idle' ? 0.22 : 1;
       g.drawImage(this.deco, 0, 0, this.W, this.H);
       g.globalAlpha = 1;
       this.drawDecoLive(g, now, p);
@@ -1131,6 +1131,9 @@ class RhythmGame {
     const fx = this.fieldX, fw = this.fieldW, H = this.H, jy = this.judgeY;
     // 필드 그림자 + 본체
     const sk = this.sk;
+    // 레인 불투명도 (설정) : 필드 바탕 · 레인 색 · 점선에만 적용, 노트와 판정선은 그대로
+    const la = this.settings && typeof this.settings.laneAlpha === 'number' ? this.settings.laneAlpha : 1;
+    g.globalAlpha = la;
     g.fillStyle = sk.fieldShadow;
     g.fillRect(fx - 10, 0, fw + 20, H);
     g.fillStyle = this.fieldGrad;
@@ -1146,6 +1149,7 @@ class RhythmGame {
       const x = this.laneX[l] - 1;
       for (let y = -14 + dashOff; y < jy; y += 14) g.fillRect(x, y, 2, 6);
     }
+    g.globalAlpha = 1;
 
     // 마디선 (BPM 을 아는 곡만)
     if (this.song.grid) {

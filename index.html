@@ -72,6 +72,24 @@
         </div>
         <input type="file" id="fileInput" accept="audio/*,.mp3,.ogg,.wav,.m4a,.flac" multiple hidden>
       </div>
+      <div class="song-filter">
+        <label class="search-box">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5 21 21"/></svg>
+          <input type="search" id="songSearch" placeholder="곡 검색 · 제목, 한국어 발음도 OK" autocomplete="off" spellcheck="false">
+        </label>
+        <div class="filter-row">
+          <select id="songSort" aria-label="정렬">
+            <option value="pop">인기순</option>
+            <option value="title">제목순</option>
+            <option value="lvUp">레벨 낮은순</option>
+            <option value="lvDown">레벨 높은순</option>
+            <option value="bpmUp">BPM 느린순</option>
+            <option value="bpmDown">BPM 빠른순</option>
+          </select>
+          <button type="button" id="favOnly" class="chip-btn" aria-pressed="false">★ 즐겨찾기만</button>
+          <span id="songCount" class="song-count"></span>
+        </div>
+      </div>
       <ul id="songList" class="song-list"></ul>
       <div class="drop-hint">음악 파일을 창에 끌어다 놓으면 채보가 자동 생성돼요<br><small>mp3 · ogg · wav · m4a · flac</small></div>
     </section>
@@ -128,6 +146,11 @@
           <span class="name">타격음 볼륨</span>
           <input type="range" id="setSfx" min="0" max="1" step="0.05">
           <span class="val" id="valSfx"></span>
+        </label>
+        <label class="row" title="노트가 내려오는 가운데 판의 진하기. 낮추면 뒤의 뮤직비디오가 더 잘 보여요">
+          <span class="name">레인 불투명도</span>
+          <input type="range" id="setLane" min="0" max="1" step="0.05">
+          <span class="val" id="valLane"></span>
         </label>
         <div class="row mode-row">
           <span class="name">키 모드</span>
