@@ -328,6 +328,14 @@
   });
   loadCustomSfx();
 
+  /* ---------------- 저작권 및 이용 안내 ---------------- */
+  let noticeOpen = false;
+  const openNotice = () => { noticeOpen = true; $('#noticeModal').classList.add('show'); };
+  const closeNotice = () => { noticeOpen = false; $('#noticeModal').classList.remove('show'); };
+  document.querySelectorAll('[data-notice]').forEach((b) => b.addEventListener('click', openNotice));
+  $('#noticeClose').addEventListener('click', closeNotice);
+  $('#noticeModal').addEventListener('click', (e) => { if (e.target.id === 'noticeModal') closeNotice(); });
+
   /* ---------------- 키 설정 (PC) ---------------- */
   let keyBindOpen = false, bindLane = -1;
   function renderKeyBind() {
@@ -704,6 +712,7 @@
   const evTime = (e) => (Math.abs(e.timeStamp - performance.now()) < 1000 ? e.timeStamp : performance.now());
 
   window.addEventListener('keydown', (e) => {
+    if (noticeOpen) { if (e.code === 'Escape' || e.code === 'Enter') { e.preventDefault(); closeNotice(); } return; }
     if (keyBindOpen) { keyBindKey(e); return; }
     if (modalOpen) { ytModalKey(e); return; }
     const lane = LANE_OF[e.code];

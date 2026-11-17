@@ -56,7 +56,7 @@
       <span class="word"><i>R</i><i>H</i><i>Y</i><i>T</i><i>H</i><i>M</i></span>
       <span class="word w2"><i>M</i><i>A</i><i>S</i><i>T</i><i>A</i></span>
     </div>
-    <div class="sub disclaimer">비공식 팬메이드 · 비영리 · Mrs. GREEN APPLE 및 소속사와 관계없음</div>
+    <button type="button" class="sub disclaimer" data-notice>비공식 팬메이드 · 비영리 · Mrs. GREEN APPLE 및 소속사와 관계없음 <u>안내</u></button>
   </header>
 
   <main class="menu-body">
@@ -168,7 +168,7 @@
 
       <button id="startBtn" class="btn primary start">GAME START <small>ENTER</small></button>
     </section>
-    <div class="disclaimer-m">비공식 팬메이드 · 비영리 · Mrs. GREEN APPLE 및 소속사와 관계없음<br>영상은 유튜브 공식 채널에서 재생돼요</div>
+    <button type="button" class="disclaimer-m" data-notice>비공식 팬메이드 · 비영리 · Mrs. GREEN APPLE 및 소속사와 관계없음<br>영상은 유튜브 공식 채널에서 재생돼요 · <u>저작권 및 이용 안내</u></button>
   </main>
 
   <footer class="keyguide">
@@ -313,6 +313,23 @@
       <button class="btn" id="keyBindReset">기본값으로</button>
       <button class="btn primary" id="keyBindClose">완료</button>
     </div>
+  </div>
+</div>
+
+<!-- ============ 저작권 및 이용 안내 ============ -->
+<div id="noticeModal" class="overlay">
+  <div class="notice-card">
+    <h2>저작권 및 이용 안내</h2>
+    <ul class="notice-list">
+      <li><b>비공식 팬메이드 · 비영리</b><span>Mrs. GREEN APPLE 팬이 개인적으로 만든 비공식 게임이에요. Mrs. GREEN APPLE 및 소속사·레이블과는 관계가 없고, 광고·후원 등 어떤 수익도 받지 않아요.</span></li>
+      <li><b>노래·영상 파일은 들어 있지 않아요</b><span>게임에는 노래나 영상 파일이 포함되어 있지 않아요. 곡은 유튜브 공식 플레이어(IFrame API)로 공식 채널에 올라온 영상을 재생해요. 조회·재생은 모두 유튜브를 통해 이루어져요.</span></li>
+      <li><b>채보는 노트 위치 데이터예요</b><span>샘플 곡 채보에는 곡의 박자와 소리 위치를 분석해 만든 노트 타이밍 데이터만 들어 있어요. 음원 자체는 들어 있지 않아요.</span></li>
+      <li><b>스킨은 색감만 빌린 오마쥬예요</b><span>앨범 오마쥬 스킨은 커버의 색감과 분위기만 참고해서 새로 그렸어요. 커버 그림, 로고, 앨범 타이틀은 쓰지 않았어요.</span></li>
+      <li><b>효과음은 퍼블릭 도메인이에요</b><span>타격음은 Sonic Pi 기본 샘플(CC0 퍼블릭 도메인) 녹음이에요. 출처는 저장소의 sounds/CREDITS.md 에 있어요.</span></li>
+      <li><b>권리는 원 권리자에게 있어요</b><span>곡, 뮤직비디오, 아티스트명과 관련된 모든 권리는 각 권리자에게 있어요.</span></li>
+      <li><b>요청하시면 바로 고칠게요</b><span>권리자께서 수정이나 삭제를 원하시면 GitHub 저장소(github.com/Seongyoru/rhythm-masta)의 Issues 로 알려주세요. 확인하는 대로 바로 수정하거나 내릴게요.</span></li>
+    </ul>
+    <div class="res-btns"><button class="btn primary" id="noticeClose">확인</button></div>
   </div>
 </div>
 
