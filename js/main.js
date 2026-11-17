@@ -19,7 +19,7 @@
     } catch (e) { return false; }
   })();
   if (IS_MOBILE) document.body.classList.add('mobile');
-  const settings = Object.assign({ keyMode: IS_MOBILE ? '4k' : '7k', preview: true, speed: 5.5, offset: 0, music: 0.8, sfx: 0.6, auto: false, skin: DEFAULT_SKIN, hitSound: 'osu' }, store.get('rm_settings', {}));
+  const settings = Object.assign({ keyMode: IS_MOBILE ? '4k' : '7k', preview: true, speed: 5.5, offset: 0, music: 0.8, sfx: 0.6, auto: false, skin: DEFAULT_SKIN, hitSound: 'snare' }, store.get('rm_settings', {}));
   const bests = store.get('rm_best', {});
   const ytList = store.get('rm_yt', []);          // 유튜브 곡 목록 (영상 ID · BPM · 첫 박 ...)
   const customCharts = store.get('rm_charts', {}); // 녹화로 만든 채보 : "곡ID|난이도" → chart
@@ -227,7 +227,7 @@
     // 타격음 종류
     const hs = $('#setHitSound');
     hs.innerHTML = Object.entries(AudioEngine.SFX_KINDS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
-    if (!AudioEngine.SFX_KINDS[settings.hitSound]) settings.hitSound = 'osu';
+    if (!AudioEngine.SFX_KINDS[settings.hitSound]) settings.hitSound = 'snare';
     hs.value = settings.hitSound;
     AudioEngine.setSfxKind(settings.hitSound);
     $('#customSfxRow').hidden = settings.hitSound !== 'custom';
@@ -236,7 +236,7 @@
       settings.hitSound = hs.value;
       AudioEngine.setSfxKind(hs.value);
       saveSettings();
-      AudioEngine.resume().then(() => { if (hs.value === 'taiko') { AudioEngine.playHit('taiko', 1); setTimeout(() => AudioEngine.playHit('taiko', 0), 260); } else AudioEngine.playHit(); });
+      AudioEngine.resume().then(() => { if (hs.value === 'taiko' || hs.value === 'tabla') { AudioEngine.playHit(null, 1); setTimeout(() => AudioEngine.playHit(null, 0), 280); } else AudioEngine.playHit(); });
     });
     const auto = $('#setAuto');
     auto.checked = !!settings.auto;
