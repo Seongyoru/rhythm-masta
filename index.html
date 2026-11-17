@@ -57,6 +57,9 @@
       <span class="word w2"><i>M</i><i>A</i><i>S</i><i>T</i><i>A</i></span>
     </div>
     <button type="button" class="sub disclaimer" data-notice>비공식 팬메이드 · 비영리 · Mrs. GREEN APPLE 및 소속사와 관계없음 <u>안내</u></button>
+    <div class="lang-switch" id="langSwitch" role="group" aria-label="Language">
+      <button type="button" data-lang="ko">한국어</button><button type="button" data-lang="ja">日本語</button><button type="button" data-lang="en">EN</button>
+    </div>
   </header>
 
   <main class="menu-body">
@@ -144,6 +147,11 @@
         <label class="row">
           <span class="name">타격음</span>
           <select id="setHitSound"></select>
+        </label>
+        <label class="row toggle vibe-row">
+          <span class="name">터치 진동<small class="hint">안드로이드에서만 작동해요</small></span>
+          <input type="checkbox" id="setVibrate">
+          <span class="switch"></span>
         </label>
         <div class="row csfx-row" id="customSfxRow" hidden>
           <span class="name">내 효과음</span>
@@ -276,14 +284,14 @@
           <button class="btn auto" id="ytAuto"><span class="ic">🎧</span><span id="ytAutoLbl">자동 맞추기</span></button>
           <div class="tap-info">
             <b>영상 소리를 듣고 BPM · 첫 박을 찾아요</b>
-            <span>공유 창이 뜨면 <b>이 탭</b>과 <b>탭 오디오 공유</b>를 골라 주세요. 30~60초 정도 들어요. 소리는 저장하지 않아요.</span>
+            <span data-i18n-html>공유 창이 뜨면 <b>이 탭</b>과 <b>탭 오디오 공유</b>를 골라 주세요. 30~60초 정도 들어요. 소리는 저장하지 않아요.</span>
           </div>
         </div>
         <div class="yt-tap">
           <button class="btn tap" id="ytTap">탭! <small>T</small></button>
           <div class="tap-info">
             <b id="ytTapRes">탭 0회</b>
-            <span>영상을 재생하고 <b>노래가 시작되는 첫 박부터</b> 박자에 맞춰 <kbd>T</kbd> 를 8번 이상 누르면 BPM과 첫 박이 자동으로 채워져요.</span>
+            <span data-i18n-html>영상을 재생하고 <b>노래가 시작되는 첫 박부터</b> 박자에 맞춰 <kbd>T</kbd> 를 8번 이상 누르면 BPM과 첫 박이 자동으로 채워져요.</span>
           </div>
         </div>
         <div class="yt-mini-btns">
@@ -336,6 +344,7 @@
 <div id="dropZone"><div>여기에 놓으면 곡이 추가돼요</div></div>
 <div id="toast"></div>
 
+<script src="js/i18n.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/skins.js"></script>
 <script src="js/youtube.js"></script>

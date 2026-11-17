@@ -1163,3 +1163,22 @@ button.disclaimer, button.disclaimer-m { cursor: pointer; font: inherit; }
 .notice-list span { font-size: 13px; line-height: 1.6; color: var(--ink2); }
 .dk .notice-card { background: rgba(26, 22, 62, .97); border-color: rgba(255,255,255,.1); box-shadow: 0 30px 80px rgba(0,0,0,.5); }
 .dk .notice-list li { background: rgba(255,255,255,.06); }
+
+/* ================= 언어 전환 ================= */
+.lang-switch { display: flex; gap: 2px; padding: 3px; border-radius: 99px; background: rgba(255, 255, 255, .7); border: 1.5px solid #fff; box-shadow: 0 4px 14px rgba(120, 90, 200, .1); }
+.lang-switch button { padding: 5px 11px; border-radius: 99px; font: 700 12px var(--fk); color: var(--ink2); transition: background .15s, color .15s; }
+.lang-switch button:hover { background: rgba(255, 255, 255, .8); }
+.lang-switch button.on { background: var(--apple); color: #fff; }
+.dk .lang-switch { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.12); }
+@media (max-width: 900px) { .lang-switch { margin-left: auto; } .lang-switch button { padding: 5px 9px; font-size: 11px; } }
+
+/* ================= PC 큰 화면 : UI 크게, GAME START 를 설정 바로 아래로 ================= */
+.detail .start { margin-top: 6px; }
+@media (min-width: 1500px) and (min-height: 820px) { #menu, .overlay > div { zoom: 1.12; } }
+@media (min-width: 1750px) and (min-height: 900px) { #menu, .overlay > div { zoom: 1.24; } }
+@media (min-width: 2300px) and (min-height: 1150px) { #menu, .overlay > div { zoom: 1.45; } }
+
+/* 터치 진동 : 모바일에서만 */
+.vibe-row { display: none; }
+body.mobile .vibe-row { display: grid; }
+.row .name .hint { display: block; margin-top: 2px; font-size: 10.5px; font-weight: 500; color: var(--muted); }

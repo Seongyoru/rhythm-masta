@@ -30,7 +30,7 @@ const YtEngine = (() => {
     150: '이 영상은 외부 재생이 막혀 있어요 (채널 설정). 다른 영상을 골라주세요',
     153: '유튜브가 재생을 거부했어요. start.bat 로 실행했는지 확인해 주세요',
   };
-  const errMsg = (c) => ERR[c] || `영상 재생 오류 (코드 ${c})`;
+  const errMsg = (c) => (ERR[c] ? T(ERR[c]) : T('영상 재생 오류 (코드 {c})', { c }));
 
   /* 유튜브 주소 → 영상 ID */
   function parseId(input) {
@@ -48,9 +48,9 @@ const YtEngine = (() => {
       window.onYouTubeIframeAPIReady = () => { if (prev) prev(); res(); };
       const sc = document.createElement('script');
       sc.src = 'https://www.youtube.com/iframe_api';
-      sc.onerror = () => { apiP = null; rej(new Error('유튜브에 연결할 수 없어요. 인터넷 연결을 확인해 주세요')); };
+      sc.onerror = () => { apiP = null; rej(new Error(T('유튜브에 연결할 수 없어요. 인터넷 연결을 확인해 주세요'))); };
       document.head.appendChild(sc);
-      setTimeout(() => rej(new Error('유튜브 플레이어를 불러오지 못했어요 (시간 초과)')), 20000);
+      setTimeout(() => rej(new Error(T('유튜브 플레이어를 불러오지 못했어요 (시간 초과)'))), 20000);
     });
     return apiP;
   }
@@ -62,7 +62,7 @@ const YtEngine = (() => {
       host.innerHTML = '';
       const el = document.createElement('div');
       host.appendChild(el);
-      const timer = setTimeout(() => rej(new Error('유튜브 플레이어를 준비하지 못했어요')), 20000);
+      const timer = setTimeout(() => rej(new Error(T('유튜브 플레이어를 준비하지 못했어요'))), 20000);
       player = new YT.Player(el, {
         width: '100%', height: '100%', videoId: id,
         playerVars: {
@@ -100,8 +100,8 @@ const YtEngine = (() => {
         if (lastErr !== null) return rej(new Error(errMsg(lastErr)));
         const st = state(), ct = cur();
         if (st === 1 && ct > start + 0.12) return res();
-        if (now() - t0 > 45000) return rej(new Error('영상을 불러오지 못했어요 (시간 초과)'));
-        if (onStatus) onStatus(st === 3 ? '영상 버퍼링 중...' : '영상 준비 중... (광고가 나오면 끝날 때까지 기다려 주세요)', Math.min(0.95, (now() - t0) / 8000));
+        if (now() - t0 > 45000) return rej(new Error(T('영상을 불러오지 못했어요 (시간 초과)')));
+        if (onStatus) onStatus(st === 3 ? T('영상 버퍼링 중...') : T('영상 준비 중... (광고가 나오면 끝날 때까지 기다려 주세요)'), Math.min(0.95, (now() - t0) / 8000));
         if (st === 5 || st === -1 || st === 2) p.playVideo();
         setTimeout(tick, 120);
       };

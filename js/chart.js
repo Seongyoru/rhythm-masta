@@ -473,7 +473,7 @@ const ChartGen = (() => {
 
     const N = 1024, HOP = 256, half = N / 2;
     const frames = n >= N ? Math.floor((n - N) / HOP) + 1 : 0;
-    if (frames < 50) throw new Error('곡이 너무 짧아요');
+    if (frames < 50) throw new Error(T('곡이 너무 짧아요'));
     const win = new Float32Array(N);
     for (let i = 0; i < N; i++) win[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (N - 1));
     const re = new Float32Array(N), im = new Float32Array(N), prev = new Float32Array(half);
@@ -522,7 +522,7 @@ const ChartGen = (() => {
       if (lp && f - lp.f < (SENS ? 3 : 4)) { if (v > lp.v) { lp.f = f; lp.v = v; } continue; }
       peaks.push({ f, v });
     }
-    if (!peaks.length) throw new Error('타격 지점을 찾지 못했어요');
+    if (!peaks.length) throw new Error(T('타격 지점을 찾지 못했어요'));
 
     // 세기 정규화 (전역 + 구간별)
     const sorted = peaks.map((p) => p.v).sort((a, b) => a - b);

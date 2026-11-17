@@ -14,7 +14,7 @@ const AutoSync = (() => {
   /* 탭 오디오 공유 요청 (클릭 등 사용자 동작 안에서 불러야 함) */
   async function requestTabAudio() {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-      throw new Error('이 브라우저는 탭 소리 공유를 지원하지 않아요. 크롬이나 엣지를 써 주세요');
+      throw new Error(T('이 브라우저는 탭 소리 공유를 지원하지 않아요. 크롬이나 엣지를 써 주세요'));
     }
     let stream;
     try {
@@ -24,11 +24,11 @@ const AutoSync = (() => {
         preferCurrentTab: true, selfBrowserSurface: 'include', surfaceSwitching: 'exclude', systemAudio: 'exclude',
       });
     } catch (e) {
-      throw new Error('탭 공유가 취소됐어요');
+      throw new Error(T('탭 공유가 취소됐어요'));
     }
     stream.getVideoTracks().forEach((t) => t.stop()); // 화면은 필요 없음
     if (!stream.getAudioTracks().length) {
-      throw new Error('소리가 공유되지 않았어요. 공유 창에서 "탭 오디오도 공유"를 켜고 이 탭을 골라 주세요');
+      throw new Error(T('소리가 공유되지 않았어요. 공유 창에서 "탭 오디오도 공유"를 켜고 이 탭을 골라 주세요'));
     }
     return stream;
   }
@@ -127,9 +127,9 @@ const AutoSync = (() => {
       stop: finish,
       done: done.then(() => {
         const total = lastEnd;
-        if (total < sr * 8) throw new Error('너무 짧게 들었어요. 조금 더 길게 재생해 주세요');
-        if (peak < 0.01) throw new Error('소리가 들리지 않았어요. 영상 소리가 켜져 있는지 (음악 볼륨) 확인해 주세요');
-        if (tpairs.length < 20) throw new Error('영상 재생 시간을 읽지 못했어요');
+        if (total < sr * 8) throw new Error(T('너무 짧게 들었어요. 조금 더 길게 재생해 주세요'));
+        if (peak < 0.01) throw new Error(T('소리가 들리지 않았어요. 영상 소리가 켜져 있는지 (음악 볼륨) 확인해 주세요'));
+        if (tpairs.length < 20) throw new Error(T('영상 재생 시간을 읽지 못했어요'));
         // 블록 위치 그대로 배치 (혹시 빠진 구간은 0으로 남음 → 시간은 어긋나지 않음)
         const buf = ctx.createBuffer(1, total, sr);
         const ch = buf.getChannelData(0);
@@ -163,7 +163,7 @@ const AutoSync = (() => {
   /* onset(곡 시간) → BPM · 첫 박 */
   function estimate(onsets, bpmHint, lockBpm, analyzedBpm) {
     const strong = onsets.filter((o) => o.s >= 0.18 && o.t >= 0);
-    if (strong.length < 24) throw new Error('박자를 찾을 만큼 소리가 충분하지 않았어요');
+    if (strong.length < 24) throw new Error(T('박자를 찾을 만큼 소리가 충분하지 않았어요'));
     const wOf = (o) => o.s * (o.band === 0 ? 1.35 : o.band === 1 ? 1.15 : 0.8);
     const SIG = 0.022;
     const score = (bpm, ph) => {
@@ -187,7 +187,7 @@ const AutoSync = (() => {
     if (lockBpm && bpmHint > 0) cands = [bpmHint];
     else {
       const base = bpmHint > 0 ? bpmHint : analyzedBpm;
-      if (!(base > 0)) throw new Error('BPM을 찾지 못했어요');
+      if (!(base > 0)) throw new Error(T('BPM을 찾지 못했어요'));
       for (const m of [1, 2, 0.5, 1.5, 2 / 3]) {
         const b = base * m;
         if (b >= 60 && b <= 220) for (let x = b * 0.95; x <= b * 1.05; x += 0.1) cands.push(+x.toFixed(2));
@@ -232,7 +232,7 @@ const AutoSync = (() => {
       for (let j = k; j < k + 8; j++) if (anyW[j] >= 0.08) hit++;
       if (hit >= 5) { startK = k; break; }
     }
-    if (startK < 0) throw new Error('노래가 시작되는 지점을 찾지 못했어요. 더 길게 들어봐 주세요');
+    if (startK < 0) throw new Error(T('노래가 시작되는 지점을 찾지 못했어요. 더 길게 들어봐 주세요'));
     // 마디 첫 박 : 킥이 1·3박, 스네어가 2·4박에 오는 배치를 찾음
     let bestR = 0, bestRS = -Infinity;
     for (let r = 0; r < 4; r++) {

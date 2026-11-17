@@ -19,7 +19,7 @@
     } catch (e) { return false; }
   })();
   if (IS_MOBILE) document.body.classList.add('mobile');
-  const settings = Object.assign({ keyMode: IS_MOBILE ? '4k' : '7k', preview: true, speed: 5.5, offset: 0, music: 0.8, sfx: 0.6, auto: false, skin: DEFAULT_SKIN, hitSound: 'snare' }, store.get('rm_settings', {}));
+  const settings = Object.assign({ keyMode: IS_MOBILE ? '4k' : '7k', preview: true, vibrate: true, speed: 5.5, offset: 0, music: 0.8, sfx: 0.6, auto: false, skin: DEFAULT_SKIN, hitSound: 'snare' }, store.get('rm_settings', {}));
   const bests = store.get('rm_best', {});
   const ytList = store.get('rm_yt', []);          // 유튜브 곡 목록 (영상 ID · BPM · 첫 박 ...)
   const customCharts = store.get('rm_charts', {}); // 녹화로 만든 채보 : "곡ID|난이도" → chart
@@ -37,7 +37,10 @@
   if (!DIFFS.includes(diff)) diff = 'NORMAL';
   let screen = 'menu';
 
+  if (!['ko', 'ja', 'en'].includes(settings.lang)) settings.lang = I18N.detect();
+  I18N.setLang(settings.lang);
   const game = new RhythmGame($('#game'), { onFinish: showResult });
+  game.showKr = settings.lang === 'ko';
   if (!KEY_MODES[settings.keyMode]) settings.keyMode = '7k';
   if (IS_MOBILE) settings.keyMode = '4k'; // 모바일(터치)은 4키 고정
   if (!settings.keys || typeof settings.keys !== 'object') settings.keys = {};
@@ -87,8 +90,8 @@
     ul.innerHTML = songs.map((s, i) => `
       <li class="song-item ${i === sel ? 'sel' : ''}" data-i="${i}" style="--h:${s.hue}">
         <div class="thumb">${esc(s.title.slice(0, 1).toUpperCase())}</div>
-        <div class="info"><b>${s.yt ? '<i class="yt-ico yt-tag"></i>' : ''}${esc(s.title)}</b><span>${esc(s.artist)}</span></div>
-        <div class="meta">${s.loading ? '<i class="mini-spin"></i>' : s.needsSync ? `${s.bpm ? Math.round(s.bpm) + ' BPM' : ''}<br><span class="need">첫 박 설정</span>` : `${s.bpm ? Math.round(s.bpm) + ' BPM' : ''}<br>${fmtTime(s.duration)}`}</div>
+        <div class="info"><b>${s.yt ? '<i class="yt-ico yt-tag"></i>' : ''}${esc(s.title)}</b><span>${esc(T(s.artist))}</span></div>
+        <div class="meta">${s.loading ? '<i class="mini-spin"></i>' : s.needsSync ? `${s.bpm ? Math.round(s.bpm) + ' BPM' : ''}<br><span class="need">${T('첫 박 설정')}</span>` : `${s.bpm ? Math.round(s.bpm) + ' BPM' : ''}<br>${fmtTime(s.duration)}`}</div>
       </li>`).join('');
     const cur = ul.querySelector('.sel');
     if (cur) cur.scrollIntoView({ block: 'nearest' });
@@ -104,21 +107,21 @@
     $('#jacketTxt').textContent = s.yt ? '' : s.title.slice(0, 1).toUpperCase();
     $('#songTag').textContent = s.demo ? 'DEMO' : s.yt ? 'YOUTUBE' : 'LOCAL FILE';
     $('#songTitle').textContent = s.title;
-    $('#songMeta').textContent = [s.artist, s.bpm ? `${Math.round(s.bpm)} BPM` : '', s.duration ? fmtTime(s.duration) : ''].filter(Boolean).join('  ·  ');
+    $('#songMeta').textContent = [T(s.artist), s.bpm ? `${Math.round(s.bpm)} BPM` : '', s.duration ? fmtTime(s.duration) : ''].filter(Boolean).join('  ·  ');
     document.querySelectorAll('.diff').forEach((b) => {
       const d = b.dataset.d, c = s.charts && s.charts[d];
       b.classList.toggle('active', d === diff);
       b.querySelector('b').textContent = c ? `Lv.${c.level}` : '-';
-      const mine = s.custom && s.custom[d] ? ' · <span class="mine">내 채보</span>' : '';
-      b.querySelector('small').innerHTML = c ? `${c.count} notes · 롱노트 ${c.holds}${mine}` : (s.loading ? '생성 중...' : '-');
+      const mine = s.custom && s.custom[d] ? ` · <span class="mine">${T('내 채보')}</span>` : '';
+      b.querySelector('small').innerHTML = c ? T('{count} notes · 롱노트 {holds}', { count: c.count, holds: c.holds }) + mine : (s.loading ? T('생성 중...') : '-');
     });
     $('#recDiff').textContent = diff;
     const needSetup = s.needsSync && !(s.charts && s.charts[diff]);
-    $('#startBtn').innerHTML = needSetup ? '첫 박 맞추기 <small>ENTER</small>' : 'GAME START <small>ENTER</small>';
-    $('#songTag').textContent = s.designed ? 'MGA · 실측 채보' : s.sample ? 'SAMPLE · YOUTUBE' : $('#songTag').textContent;
-    if (s.needsSync) $('#songMeta').textContent = [s.artist, s.bpm ? `${Math.round(s.bpm)} BPM` : '', '첫 박 위치를 한 번 맞추면 채보가 만들어져요'].filter(Boolean).join('  ·  ');
+    $('#startBtn').innerHTML = needSetup ? `${T('첫 박 맞추기')} <small>ENTER</small>` : 'GAME START <small>ENTER</small>';
+    $('#songTag').textContent = s.designed ? T('MGA · 실측 채보') : s.sample ? 'SAMPLE · YOUTUBE' : $('#songTag').textContent;
+    if (s.needsSync) $('#songMeta').textContent = [T(s.artist), s.bpm ? `${Math.round(s.bpm)} BPM` : '', T('첫 박 위치를 한 번 맞추면 채보가 만들어져요')].filter(Boolean).join('  ·  ');
     $('#recBtn').disabled = !!s.loading || !s.charts;
-    $('#editYtBtn').textContent = s.needsSync ? '첫 박 맞추기' : '곡 설정';
+    $('#editYtBtn').textContent = s.needsSync ? T('첫 박 맞추기') : T('곡 설정');
     $('#resetChartBtn').hidden = !(s.custom && s.custom[diff]);
     $('#editYtBtn').hidden = !s.yt || !!s.designed;
     $('#delSongBtn').hidden = !s.yt;
@@ -220,14 +223,21 @@
       if (b.dataset.mode === settings.keyMode) return;
       applyMode(b.dataset.mode);
       saveSettings();
-      toast(settings.keyMode === '4k' ? '4키 모드 : D F J K' : '7키 모드 : A S D 스페이스 L ; \'');
+      toast(settings.keyMode === '4k' ? T('4키 모드 : D F J K') : T('7키 모드 : A S D 스페이스 L ; \''));
     }));
+    const vib = $('#setVibrate');
+    vib.checked = settings.vibrate !== false;
+    vib.addEventListener('change', () => {
+      settings.vibrate = vib.checked;
+      saveSettings();
+      if (vib.checked && navigator.vibrate) { try { navigator.vibrate(20); } catch (err) { /* ignore */ } }
+    });
     const pvt = $('#setPreview');
     pvt.checked = settings.preview !== false;
     pvt.addEventListener('change', () => { settings.preview = pvt.checked; saveSettings(); if (!pvt.checked) stopPreview(); else schedulePreview(); });
     // 타격음 종류
     const hs = $('#setHitSound');
-    hs.innerHTML = Object.entries(AudioEngine.SFX_KINDS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
+    hs.innerHTML = Object.entries(AudioEngine.SFX_KINDS).map(([k, v]) => `<option value="${k}">${T(v)}</option>`).join('');
     if (!AudioEngine.SFX_KINDS[settings.hitSound]) settings.hitSound = 'snare';
     hs.value = settings.hitSound;
     AudioEngine.setSfxKind(settings.hitSound);
@@ -252,7 +262,7 @@
   function renderKeyguide() {
     const box = document.querySelector('.keys');
     box.innerHTML = GUIDE[settings.keyMode].map(([, , c], i) => {
-      const b = esc(KEY_LABELS[i] || ''), k = KEY_KR[i] || '';
+      const b = esc(KEY_LABELS[i] || ''), k = I18N.lang === 'ko' ? KEY_KR[i] || '' : '';
       return c.includes('space')
         ? `<div class="kc ${c}"><svg><use href="#i-apple"/></svg><b>${b}</b></div>`
         : `<div class="kc ${c}"><b>${b}</b>${k ? `<i>${k}</i>` : ''}</div>`;
@@ -293,7 +303,7 @@
     for (const slot of ['A', 'B']) {
       try {
         const rec = await sfxDB.get(slot);
-        $(`#csfx${slot}`).textContent = rec ? rec.name : '없음';
+        $(`#csfx${slot}`).textContent = rec ? rec.name : T('없음');
         if (rec) AudioEngine.setCustomSfx(slot, await AudioEngine.decode(rec.data.slice(0)));
         else AudioEngine.setCustomSfx(slot, null);
       } catch (e) { console.warn(e); }
@@ -305,28 +315,54 @@
     const f = e.target.files && e.target.files[0];
     e.target.value = '';
     if (!f) return;
-    if (f.size > 5 * 1024 * 1024) { toast('효과음 파일은 5MB 이하로 골라 주세요'); return; }
+    if (f.size > 5 * 1024 * 1024) { toast(T('효과음 파일은 5MB 이하로 골라 주세요')); return; }
     try {
       const data = await f.arrayBuffer();
       const buf = await AudioEngine.decode(data.slice(0));
-      if (buf.duration > 3) toast('3초보다 긴 소리예요. 짧은 효과음이 더 잘 맞아요');
+      if (buf.duration > 3) toast(T('3초보다 긴 소리예요. 짧은 효과음이 더 잘 맞아요'));
       await sfxDB.put(csfxSlot, { name: f.name, data });
       AudioEngine.setCustomSfx(csfxSlot, buf);
       $(`#csfx${csfxSlot}`).textContent = f.name;
       await AudioEngine.resume();
       AudioEngine.playHit('custom', csfxSlot === 'A' ? 1 : 0);
-      toast(`${csfxSlot === 'A' ? '기본' : '바깥쪽'} 효과음을 바꿨어요`);
+      toast(csfxSlot === 'A' ? T('기본 효과음을 바꿨어요') : T('바깥쪽 효과음을 바꿨어요'));
     } catch (err) {
       console.error(err);
-      toast('이 파일은 소리로 읽을 수 없어요');
+      toast(T('이 파일은 소리로 읽을 수 없어요'));
     }
   });
   $('#csfxClear').addEventListener('click', async () => {
     await sfxDB.del('A'); await sfxDB.del('B');
     await loadCustomSfx();
-    toast('내 효과음을 지웠어요');
+    toast(T('내 효과음을 지웠어요'));
   });
   loadCustomSfx();
+
+  /* ---------------- 언어 (한국어 / 日本語 / English) ---------------- */
+  function renderLangBtns() {
+    document.querySelectorAll('#langSwitch [data-lang]').forEach((b) => b.classList.toggle('on', b.dataset.lang === I18N.lang));
+  }
+  function applyLang(l) {
+    settings.lang = l;
+    I18N.setLang(l);
+    game.showKr = l === 'ko';
+    renderLangBtns();
+    renderSongList();
+    if (songs.length) updateDetail();
+    renderSkins();
+    renderKeyguide();
+    const hs = $('#setHitSound'), cur = hs.value;
+    hs.innerHTML = Object.entries(AudioEngine.SFX_KINDS).map(([k, v]) => `<option value="${k}">${T(v)}</option>`).join('');
+    hs.value = cur;
+    loadCustomSfx();
+    if (keyBindOpen) renderKeyBind();
+  }
+  document.querySelectorAll('#langSwitch [data-lang]').forEach((b) => b.addEventListener('click', () => {
+    if (b.dataset.lang === I18N.lang) return;
+    applyLang(b.dataset.lang);
+    saveSettings();
+  }));
+  renderLangBtns();
 
   /* ---------------- 저작권 및 이용 안내 ---------------- */
   let noticeOpen = false;
@@ -343,13 +379,13 @@
     const cls = GUIDE[settings.keyMode];
     box.className = `kb-lanes ${settings.keyMode === '4k' ? 'k4' : ''}`;
     box.innerHTML = KEY_CODES.map((code, i) => `<button type="button" class="kb-lane kc ${cls[i][2]} ${i === bindLane ? 'wait' : ''}" data-lane="${i}">
-        <small>${i === SPACE_LANE ? '가운데' : `${i + 1}번`}</small><b>${i === bindLane ? '?' : esc(KEY_LABELS[i])}</b>${KEY_KR[i] && i !== bindLane ? `<i>${KEY_KR[i]}</i>` : ''}</button>`).join('');
-    box.querySelectorAll('.kb-lane').forEach((b) => b.addEventListener('click', () => { bindLane = +b.dataset.lane; renderKeyBind(); $('#keyBindMsg').textContent = `${+b.dataset.lane + 1}번 레인에 쓸 키를 누르세요 (Esc 취소)`; }));
-    $('#keyBindTitle').textContent = `키 설정 · ${settings.keyMode === '4k' ? '4키' : '7키'}`;
+        <small>${i === SPACE_LANE ? T('가운데') : T('{n}번', { n: i + 1 })}</small><b>${i === bindLane ? '?' : esc(KEY_LABELS[i])}</b>${KEY_KR[i] && i !== bindLane ? `<i>${KEY_KR[i]}</i>` : ''}</button>`).join('');
+    box.querySelectorAll('.kb-lane').forEach((b) => b.addEventListener('click', () => { bindLane = +b.dataset.lane; renderKeyBind(); $('#keyBindMsg').textContent = T('{n}번 레인에 쓸 키를 누르세요 (Esc 취소)', { n: +b.dataset.lane + 1 }); }));
+    $('#keyBindTitle').textContent = T('키 설정 · {mode}', { mode: settings.keyMode === '4k' ? T('4키') : T('7키') });
   }
   function openKeyBind() {
     keyBindOpen = true; bindLane = -1;
-    $('#keyBindMsg').textContent = '바꾸고 싶은 레인을 누른 다음, 원하는 키를 누르세요';
+    $('#keyBindMsg').textContent = T('바꾸고 싶은 레인을 누른 다음, 원하는 키를 누르세요');
     renderKeyBind();
     $('#keyModal').classList.add('show');
   }
@@ -369,14 +405,14 @@
   function keyBindKey(e) {
     e.preventDefault();
     if (bindLane < 0) { if (e.code === 'Escape') closeKeyBind(); return; }
-    if (e.code === 'Escape') { bindLane = -1; $('#keyBindMsg').textContent = '취소했어요'; renderKeyBind(); return; }
+    if (e.code === 'Escape') { bindLane = -1; $('#keyBindMsg').textContent = T('취소했어요'); renderKeyBind(); return; }
     if (['Enter', 'Tab', 'MetaLeft', 'MetaRight', 'ContextMenu', ''].includes(e.code) || /^F\d+$/.test(e.code)) {
-      $('#keyBindMsg').textContent = '그 키는 쓸 수 없어요. 다른 키를 눌러 주세요'; return;
+      $('#keyBindMsg').textContent = T('그 키는 쓸 수 없어요. 다른 키를 눌러 주세요'); return;
     }
     const lane = bindLane;
     bindLane = -1;
     setLaneKey(lane, e.code);
-    $('#keyBindMsg').textContent = `${lane + 1}번 레인 → ${KEY_LABELS[lane]}`;
+    $('#keyBindMsg').textContent = T('{n}번 레인 → {key}', { n: lane + 1, key: KEY_LABELS[lane] });
     renderKeyBind();
   }
   $('#keyBindBtn').addEventListener('click', openKeyBind);
@@ -385,7 +421,7 @@
     delete settings.keys[settings.keyMode];
     saveSettings(); applyMode(settings.keyMode);
     bindLane = -1; renderKeyBind();
-    $('#keyBindMsg').textContent = '기본 키로 되돌렸어요';
+    $('#keyBindMsg').textContent = T('기본 키로 되돌렸어요');
   });
   $('#keyModal').addEventListener('click', (e) => { if (e.target.id === 'keyModal') closeKeyBind(); });
 
@@ -401,21 +437,21 @@
     const box = $('#skinPicker');
     const btn = (id) => {
       const sk = SKINS[id];
-      return `<button type="button" class="skin-opt ${id === settings.skin ? 'on' : ''}" data-skin="${id}" title="${esc(sk.desc)}">
+      return `<button type="button" class="skin-opt ${id === settings.skin ? 'on' : ''}" data-skin="${id}" title="${esc(T(sk.desc))}">
         <span class="sw">${sk.swatch.map((c) => `<i style="background:${c}"></i>`).join('')}</span>
-        <b>${esc(sk.name)}</b></button>`;
+        <b>${esc(T(sk.name))}</b></button>`;
     };
     const basic = SKIN_IDS.filter((id) => SKINS[id].group !== 'album');
     const album = SKIN_IDS.filter((id) => SKINS[id].group === 'album');
     box.innerHTML = basic.map(btn).join('')
-      + `<div class="skin-sep">앨범 오마쥬 <small>${esc(SKINS[settings.skin].group === 'album' ? SKINS[settings.skin].desc : '앨범 커버의 색감과 분위기를 빌려온 스킨')}</small></div>`
+      + `<div class="skin-sep">${T('앨범 오마쥬')} <small>${esc(SKINS[settings.skin].group === 'album' ? T(SKINS[settings.skin].desc) : T('앨범 커버의 색감과 분위기를 빌려온 스킨'))}</small></div>`
       + album.map(btn).join('');
     box.querySelectorAll('.skin-opt').forEach((b) => b.addEventListener('click', (e) => {
       e.preventDefault();
       applySkin(b.dataset.skin);
       saveSettings();
       renderSkins();
-      toast(`스킨 : ${SKINS[settings.skin].name}`);
+      toast(T('스킨 : {name}', { name: T(SKINS[settings.skin].name) }));
     }));
   }
   applySkin(settings.skin);
@@ -466,12 +502,12 @@
     notes.sort((a, b) => a.t - b.t);
     const busy = new Array(7).fill(-1);
     const clean = notes.filter((n) => { if (n.t <= busy[n.lane]) return false; busy[n.lane] = n.end ? n.end + 0.05 : n.t + 0.03; return true; });
-    if (clean.length < 5) { toast('노트가 너무 적어서 저장하지 않았어요'); return; }
+    if (clean.length < 5) { toast(T('노트가 너무 적어서 저장하지 않았어요')); return; }
     const dur = song.buffer ? song.buffer.duration : song.duration;
     customCharts[ckey(song.id, d)] = ChartGen.finalize(clean, dur, d);
     store.set('rm_charts', customCharts);
     applyCustom(song);
-    toast(`${d} 채보를 녹화한 내용으로 저장했어요 (노트 ${clean.length}개)`);
+    toast(T('{d} 채보를 녹화한 내용으로 저장했어요 (노트 {n}개)', { d, n: clean.length }));
   }
 
   /* ---------------- 유튜브 곡 ---------------- */
@@ -532,16 +568,16 @@
   const AUDIO_RE = /\.(mp3|ogg|oga|wav|m4a|aac|flac|opus|webm)$/i;
   async function addFiles(fileList) {
     const files = [...fileList].filter((f) => /^audio\//.test(f.type) || AUDIO_RE.test(f.name));
-    if (!files.length) { toast('음악 파일만 추가할 수 있어요'); return; }
+    if (!files.length) { toast(T('음악 파일만 추가할 수 있어요')); return; }
     for (const f of files) {
       const id = `file:${f.name}:${f.size}`;
       const exist = songs.findIndex((s) => s.id === id);
       if (exist >= 0) { selectSong(exist); continue; }
       try {
-        setLoading(`"${f.name}" 불러오는 중...`, 0.02);
+        setLoading(T('"{name}" 불러오는 중...', { name: f.name }), 0.02);
         const ab = await f.arrayBuffer();
         const buffer = await AudioEngine.decode(ab);
-        setLoading(`"${f.name}" 비트 분석 중...`, 0.1);
+        setLoading(T('"{name}" 비트 분석 중...', { name: f.name }), 0.1);
         const an = await ChartGen.analyze(buffer, (p) => setLoading(null, 0.1 + p * 0.85));
         let name = f.name.replace(/\.[^.]+$/, '');
         let artist = '로컬 파일';
@@ -555,10 +591,10 @@
         applyCustom(song);
         songs.push(song);
         sel = songs.length - 1;
-        toast(`"${name}" 추가 완료!`);
+        toast(T('"{name}" 추가 완료!', { name }));
       } catch (e) {
         console.error(e);
-        toast(`"${f.name}"을(를) 읽을 수 없어요`);
+        toast(T('"{name}"을(를) 읽을 수 없어요', { name: f.name }));
       }
     }
     hideLoading();
@@ -573,7 +609,7 @@
     const s = songs[sel];
     if (!s || s.loading || !s.charts || starting) return;
     if (!opts.record && !s.charts[diff]) {
-      if (s.yt) openYtModal(s); else toast('이 난이도는 채보가 없어요');
+      if (s.yt) openYtModal(s); else toast(T('이 난이도는 채보가 없어요'));
       return;
     }
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
@@ -583,16 +619,16 @@
     AudioEngine.setMusicVolume(settings.music);
     AudioEngine.setSfxVolume(settings.sfx);
     if (s.yt) {
-      if (location.protocol === 'file:') { toast('유튜브 곡은 start.bat 으로 실행해야 재생돼요'); return; }
+      if (location.protocol === 'file:') { toast(T('유튜브 곡은 start.bat 으로 실행해야 재생돼요')); return; }
       starting = true;
       try {
-        setLoading('영상 준비 중...', 0.05);
+        setLoading(T('영상 준비 중...'), 0.05);
         const info = await YtEngine.prepare(s.yt.videoId, 0, (m, pr) => setLoading(m, pr));
         if (info.duration && Math.abs(info.duration - s.duration) > 1) s.duration = info.duration;
         YtEngine.setVolume(settings.music);
       } catch (e) {
         console.error(e);
-        toast(e.message || '영상을 불러오지 못했어요');
+        toast(e.message || T('영상을 불러오지 못했어요'));
         starting = false;
         hideLoading();
         return;
@@ -610,7 +646,7 @@
     setScreen('game');
     game.resize();
     game.start(s, diff, settings, opts);
-    if (opts.record) toast(`● ${diff} 채보 녹화 시작! 박자에 맞춰 쳐 보세요`);
+    if (opts.record) toast(T('● {d} 채보 녹화 시작! 박자에 맞춰 쳐 보세요', { d: diff }));
   }
   function pauseGame() {
     if (screen !== 'game' || game.state !== 'playing') return;
@@ -682,17 +718,17 @@
       document.querySelectorAll('#resJudges .bar i').forEach((i) => { i.style.width = `${i.dataset.w}%`; });
     }));
     const avg = Math.round(r.avgErr);
-    $('#resFs').textContent = `FAST ${r.fast}  ·  SLOW ${r.slow}  ·  평균 판정 오차 ${avg > 0 ? '+' : ''}${avg}ms`;
+    $('#resFs').textContent = T('FAST {f}  ·  SLOW {s}  ·  평균 판정 오차 {avg}ms', { f: r.fast, s: r.slow, avg: (avg > 0 ? '+' : '') + avg });
 
     const off = $('#resOffset');
     off.innerHTML = '';
     if (!r.auto && Math.abs(avg) >= 12 && r.counts.PERFECT + r.counts.GREAT + r.counts.GOOD >= 20) {
       const rec = Math.max(-200, Math.min(200, Math.round((settings.offset + avg) / 5) * 5));
-      off.innerHTML = `입력이 평균 ${Math.abs(avg)}ms ${avg > 0 ? '늦어요' : '빨라요'} → 추천 오프셋 <b>${rec > 0 ? '+' : ''}${rec}ms</b>
-        <button class="btn" id="applyOffset">적용</button>`;
+      off.innerHTML = `${T(avg > 0 ? '입력이 평균 {ms}ms 늦어요 → 추천 오프셋' : '입력이 평균 {ms}ms 빨라요 → 추천 오프셋', { ms: Math.abs(avg) })} <b>${rec > 0 ? '+' : ''}${rec}ms</b>
+        <button class="btn" id="applyOffset">${T('적용')}</button>`;
       $('#applyOffset').onclick = () => {
         settings.offset = rec; saveSettings(); syncSettingsUI();
-        off.textContent = `오프셋을 ${rec > 0 ? '+' : ''}${rec}ms 로 적용했어요`;
+        off.textContent = T('오프셋을 {v}ms 로 적용했어요', { v: (rec > 0 ? '+' : '') + rec });
       };
     }
 
@@ -727,7 +763,7 @@
         e.preventDefault();
         settings.speed = Math.max(1, Math.min(12, settings.speed + (e.code === 'ArrowUp' ? 0.5 : -0.5)));
         saveSettings(); syncSettingsUI();
-        toast(`스크롤 속도 x${settings.speed.toFixed(1)}`);
+        toast(T('스크롤 속도 x{v}', { v: settings.speed.toFixed(1) }));
       }
       return;
     }
@@ -766,6 +802,8 @@
     const lane = game.laneAt(e.clientX);
     if (lane < 0) return;
     pointerLane.set(e.pointerId, lane);
+    // 터치로 칠 때 아주 짧은 진동 (안드로이드 등 지원 기기만)
+    if (settings.vibrate !== false && e.pointerType === 'touch' && navigator.vibrate) { try { navigator.vibrate(12); } catch (err) { /* ignore */ } }
     try { cv.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
     game.press(lane, evTime(e));
   });
@@ -814,18 +852,18 @@
   $('#recBtn').addEventListener('click', () => startGame({ record: true }));
   $('#resetChartBtn').addEventListener('click', () => {
     const s = songs[sel];
-    if (!s || !confirm(`${diff} 녹화 채보를 지우고 자동 채보로 되돌릴까요?`)) return;
+    if (!s || !confirm(T('{d} 녹화 채보를 지우고 자동 채보로 되돌릴까요?', { d: diff }))) return;
     delete customCharts[ckey(s.id, diff)];
     store.set('rm_charts', customCharts);
     applyCustom(s);
     updateDetail();
-    toast('자동 채보로 되돌렸어요');
+    toast(T('자동 채보로 되돌렸어요'));
   });
   $('#addYtBtn').addEventListener('click', () => openYtModal(null));
   $('#editYtBtn').addEventListener('click', () => { const s = songs[sel]; if (s && s.yt) openYtModal(s); });
   $('#delSongBtn').addEventListener('click', () => {
     const s = songs[sel];
-    if (!s || !s.yt || !confirm(`"${s.title}" 을(를) 목록에서 삭제할까요?\n녹화한 채보와 기록도 함께 지워져요.`)) return;
+    if (!s || !s.yt || !confirm(T('"{title}" 을(를) 목록에서 삭제할까요?\n녹화한 채보와 기록도 함께 지워져요.', { title: s.title }))) return;
     const i = ytList.findIndex((d) => `yt:${d.videoId}` === s.id);
     if (i >= 0) ytList.splice(i, 1);
     store.set('rm_yt', ytList);
@@ -838,7 +876,7 @@
     sel = Math.max(0, Math.min(sel, songs.length - 1));
     renderSongList();
     updateDetail();
-    toast('삭제했어요');
+    toast(T('삭제했어요'));
   });
 
   // 드래그 앤 드롭
@@ -872,7 +910,7 @@
     stopPreview();
     ym.edit = editSong;
     ym.vid = null; ym.taps = []; ym.metro = false;
-    $('#ytModalTitle').textContent = editSong ? (editSong.needsSync ? `첫 박 맞추기 · ${editSong.title}` : '유튜브 곡 설정') : '유튜브 곡 추가';
+    $('#ytModalTitle').textContent = editSong ? (editSong.needsSync ? T('첫 박 맞추기 · {title}', { title: editSong.title }) : T('유튜브 곡 설정')) : T('유튜브 곡 추가');
     $('#ytUrl').value = editSong ? `https://www.youtube.com/watch?v=${editSong.yt.videoId}` : '';
     $('#ytTitle').value = editSong ? editSong.title : '';
     $('#ytArtist').value = editSong ? editSong.artist : '';
@@ -881,10 +919,10 @@
     $('#ytBpmLock').checked = !!(editSong && (editSong.grid || editSong.bpm));
     $('#ytBody').hidden = true;
     $('#ytSaveBtn').disabled = true;
-    $('#ytSaveBtn').textContent = editSong && !editSong.needsSync ? '저장하고 채보 다시 만들기' : '저장하고 채보 만들기';
-    $('#ytTapRes').textContent = '탭 0회';
-    $('#ytMetro').innerHTML = '메트로놈 <b>OFF</b>';
-    ymMsg(location.protocol === 'file:' ? '지금은 파일로 직접 열려 있어서 유튜브가 재생되지 않아요. 폴더의 start.bat 으로 실행해 주세요.' : '', location.protocol === 'file:');
+    $('#ytSaveBtn').textContent = editSong && !editSong.needsSync ? T('저장하고 채보 다시 만들기') : T('저장하고 채보 만들기');
+    $('#ytTapRes').textContent = T('탭 0회');
+    $('#ytMetro').innerHTML = T('메트로놈 <b>OFF</b>');
+    ymMsg(location.protocol === 'file:' ? T('지금은 파일로 직접 열려 있어서 유튜브가 재생되지 않아요. 폴더의 start.bat 으로 실행해 주세요.') : '', location.protocol === 'file:');
     $('#ytModal').classList.add('show');
     modalOpen = true;
     AudioEngine.resume();
@@ -905,10 +943,10 @@
   }
   async function ytLoad() {
     const id = YtEngine.parseId($('#ytUrl').value);
-    if (!id) { ymMsg('유튜브 영상 주소를 확인해 주세요 (예: https://www.youtube.com/watch?v=...)', true); return; }
-    if (location.protocol === 'file:') { ymMsg('유튜브는 start.bat 으로 실행했을 때만 재생돼요.', true); return; }
+    if (!id) { ymMsg(T('유튜브 영상 주소를 확인해 주세요 (예: https://www.youtube.com/watch?v=...)'), true); return; }
+    if (location.protocol === 'file:') { ymMsg(T('유튜브는 start.bat 으로 실행했을 때만 재생돼요.'), true); return; }
     $('#ytLoadBtn').disabled = true;
-    ymMsg('영상 불러오는 중...');
+    ymMsg(T('영상 불러오는 중...'));
     try {
       const info = await YtEngine.prepare(id, 0, (m) => ymMsg(m));
       if (!modalOpen) return;
@@ -921,11 +959,11 @@
       document.body.classList.add('yt-preview');
       placePreview();
       $('#ytSaveBtn').disabled = false;
-      ymMsg(`불러왔어요 · 길이 ${fmtTime(info.duration)}. ▶ 재생 후 탭으로 BPM과 첫 박을 맞추고, 메트로놈으로 확인해 보세요.`);
+      ymMsg(T('불러왔어요 · 길이 {len}. ▶ 재생 후 탭으로 BPM과 첫 박을 맞추고, 메트로놈으로 확인해 보세요.', { len: fmtTime(info.duration) }));
       ymLoop();
     } catch (e) {
       console.error(e);
-      ymMsg(e.message || '영상을 불러오지 못했어요', true);
+      ymMsg(e.message || T('영상을 불러오지 못했어요'), true);
     } finally {
       $('#ytLoadBtn').disabled = false;
     }
@@ -940,7 +978,7 @@
       const playing = YtEngine.isPlaying();
       $('#ytTime').textContent = `${Math.floor(t / 60)}:${(t % 60).toFixed(1).padStart(4, '0')}`;
       const pb = $('#ytModal [data-yt=toggle]');
-      const lbl = playing ? '⏸ 정지' : '▶ 재생';
+      const lbl = playing ? T('⏸ 정지') : T('▶ 재생');
       if (pb.textContent !== lbl) pb.textContent = lbl;
       // 메트로놈
       const bpm = parseFloat($('#ytBpm').value), off = parseFloat($('#ytOffset').value);
@@ -959,7 +997,7 @@
   function ymTap(perf) {
     const btn = $('#ytTap');
     btn.classList.add('hit'); setTimeout(() => btn.classList.remove('hit'), 80);
-    if (!YtEngine.isPlaying() || YtEngine.mode !== 'playing') { ymMsg('먼저 ▶ 재생을 눌러 주세요'); return; }
+    if (!YtEngine.isPlaying() || YtEngine.mode !== 'playing') { ymMsg(T('먼저 ▶ 재생을 눌러 주세요')); return; }
     if (perf - ym.lastTapPerf > 2200) ym.taps = [];
     ym.lastTapPerf = perf;
     ym.taps.push(YtEngine.songTimeAt(perf));
@@ -972,16 +1010,16 @@
       const rms = Math.sqrt(offs.reduce((a, b) => a + (b - mean) * (b - mean), 0) / offs.length);
       if (ym.taps.length >= 4) $('#ytOffset').value = +Math.max(0, mean).toFixed(3);
       $('#ytTapRes').textContent = ym.taps.length >= 4
-        ? `탭 ${ym.taps.length}회 · 첫 박 ${Math.max(0, mean).toFixed(2)}초 · 흔들림 ±${Math.round(rms * 1000)}ms`
-        : `탭 ${ym.taps.length}회 (4번 이상 눌러주세요)`;
+        ? T('탭 {n}회 · 첫 박 {sec}초 · 흔들림 ±{ms}ms', { n: ym.taps.length, sec: Math.max(0, mean).toFixed(2), ms: Math.round(rms * 1000) })
+        : T('탭 {n}회 (4번 이상 눌러주세요)', { n: ym.taps.length });
       return;
     }
     const f = fitTaps(ym.taps);
     if (f) {
       $('#ytBpm').value = +f.bpm.toFixed(2);
       $('#ytOffset').value = +f.offset.toFixed(3);
-      $('#ytTapRes').textContent = `탭 ${ym.taps.length}회 · BPM ${+f.bpm.toFixed(2)} · 흔들림 ±${Math.round(f.rms * 1000)}ms`;
-    } else $('#ytTapRes').textContent = `탭 ${ym.taps.length}회`;
+      $('#ytTapRes').textContent = T('탭 {n}회 · BPM {bpm} · 흔들림 ±{ms}ms', { n: ym.taps.length, bpm: +f.bpm.toFixed(2), ms: Math.round(f.rms * 1000) });
+    } else $('#ytTapRes').textContent = T('탭 {n}회', { n: ym.taps.length });
   }
   function ytModalKey(e) {
     const inInput = document.activeElement && document.activeElement.tagName === 'INPUT';
@@ -995,9 +1033,9 @@
   }
   function ytSave() {
     const bpm = parseFloat($('#ytBpm').value), offset = parseFloat($('#ytOffset').value);
-    if (!ym.vid) { ymMsg('먼저 영상을 불러와 주세요', true); return; }
-    if (!(bpm >= 40 && bpm <= 300)) { ymMsg('BPM을 40~300 사이로 입력해 주세요. 모르면 탭으로 맞출 수 있어요', true); return; }
-    if (!(offset >= 0 && offset < ym.duration)) { ymMsg('첫 박 위치(초)를 입력해 주세요', true); return; }
+    if (!ym.vid) { ymMsg(T('먼저 영상을 불러와 주세요'), true); return; }
+    if (!(bpm >= 40 && bpm <= 300)) { ymMsg(T('BPM을 40~300 사이로 입력해 주세요. 모르면 탭으로 맞출 수 있어요'), true); return; }
+    if (!(offset >= 0 && offset < ym.duration)) { ymMsg(T('첫 박 위치(초)를 입력해 주세요'), true); return; }
     const d = {
       videoId: ym.vid, title: $('#ytTitle').value.trim() || '제목 없음', artist: $('#ytArtist').value.trim() || 'YouTube',
       bpm, offset, duration: ym.duration,
@@ -1014,12 +1052,12 @@
     closeYtModal();
     renderSongList();
     updateDetail();
-    toast(`"${d.title}" ${old ? '설정을 저장했어요' : '추가 완료! 채보를 자동으로 만들었어요'}`);
+    toast(old ? T('"{title}" 설정을 저장했어요', { title: d.title }) : T('"{title}" 추가 완료! 채보를 자동으로 만들었어요', { title: d.title }));
   }
   /* ---- 자동 맞추기 : 탭 소리를 잠깐 들어보고 BPM · 첫 박 계산 ---- */
   async function ytAutoSync() {
     if (ym.auto) { ym.autoStop = true; return; } // 듣는 중이면 '그만 듣고 분석'
-    if (!ym.vid) { ymMsg('먼저 영상을 불러와 주세요', true); return; }
+    if (!ym.vid) { ymMsg(T('먼저 영상을 불러와 주세요'), true); return; }
     let stream = null;
     const btn = $('#ytAuto'), lbl = $('#ytAutoLbl');
     const stopStream = () => { if (stream) stream.getTracks().forEach((t) => t.stop()); stream = null; };
@@ -1028,27 +1066,27 @@
       await AudioEngine.resume();
       ym.auto = true; ym.autoStop = false;
       const metroWas = ym.metro; ym.metro = false; // 메트로놈 소리가 섞이지 않게
-      btn.classList.add('busy'); lbl.textContent = '보정 중...';
+      btn.classList.add('busy'); lbl.textContent = T('보정 중...');
       YtEngine.previewPause();
       YtEngine.previewSeek(0);
       const cap = await AutoSync.capture(stream, (perf) => (YtEngine.mode === 'playing' ? YtEngine.songTimeAt(perf) : null), {
         maxSec: 70,
         onProgress: (sec) => {
           if (sec < 2) return;
-          lbl.textContent = sec >= 20 ? '그만 듣고 분석' : `듣는 중 ${Math.floor(sec)}초`;
-          ymMsg(`영상 소리를 듣는 중이에요... ${Math.floor(sec)}초 / 최대 70초 (20초가 지나면 버튼을 눌러 바로 분석할 수 있어요)`);
+          lbl.textContent = sec >= 20 ? T('그만 듣고 분석') : T('듣는 중 {s}초', { s: Math.floor(sec) });
+          ymMsg(T('영상 소리를 듣는 중이에요... {s}초 / 최대 70초 (20초가 지나면 버튼을 눌러 바로 분석할 수 있어요)', { s: Math.floor(sec) }));
         },
         shouldStop: (sec) => ym.autoStop && sec >= 12,
       });
-      ymMsg('보정 중이에요. 짧은 "틱" 소리가 3번 나요...');
+      ymMsg(T('보정 중이에요. 짧은 "틱" 소리가 3번 나요...'));
       await cap.ready;
       YtEngine.setVolume(Math.max(0.6, settings.music));
       YtEngine.previewPlay();
       const res = await cap.done;
       stopStream();
       YtEngine.previewPause();
-      lbl.textContent = '분석 중...';
-      ymMsg('박자를 분석하는 중이에요...');
+      lbl.textContent = T('분석 중...');
+      ymMsg(T('박자를 분석하는 중이에요...'));
       const an = await ChartGen.analyze(res.buffer);
       const ons = an.onsets.map((o) => ({ ...o, t: res.toSong(o.t) }));
       const lock = $('#ytBpmLock').checked && parseFloat($('#ytBpm').value) >= 40;
@@ -1057,22 +1095,22 @@
       $('#ytOffset').value = +est.offset.toFixed(3);
       const pct = Math.round(est.conf * 100);
       const good = est.conf >= 0.55;
-      ymMsg(`찾았어요! BPM ${+est.bpm.toFixed(2)} · 첫 박 ${est.offset.toFixed(2)}초 · 박자 일치도 ${pct}%${res.calibrated ? '' : ' (보정 틱을 못 찾아서 정확도가 조금 낮을 수 있어요)'}. ` +
-        (good ? '메트로놈과 같이 재생해 줄게요. 맞으면 저장하세요.' : '일치도가 낮아요. 메트로놈으로 들어보고 어긋나면 탭으로 다시 맞춰 주세요.'), !good);
+      ymMsg(T('찾았어요! BPM {bpm} · 첫 박 {sec}초 · 박자 일치도 {pct}%', { bpm: +est.bpm.toFixed(2), sec: est.offset.toFixed(2), pct }) + (res.calibrated ? '' : T(' (보정 틱을 못 찾아서 정확도가 조금 낮을 수 있어요)')) + '. ' +
+        (good ? T('메트로놈과 같이 재생해 줄게요. 맞으면 저장하세요.') : T('일치도가 낮아요. 메트로놈으로 들어보고 어긋나면 탭으로 다시 맞춰 주세요.')), !good);
       // 확인용 : 첫 박 조금 앞에서 메트로놈과 함께 재생
       ym.metro = true;
-      $('#ytMetro').innerHTML = '메트로놈 <b>ON</b>';
+      $('#ytMetro').innerHTML = T('메트로놈 <b>ON</b>');
       YtEngine.previewSeek(Math.max(0, est.offset - 1.5));
       YtEngine.previewPlay();
       void metroWas;
     } catch (e) {
       console.error(e);
-      ymMsg(e.message || '자동 맞추기에 실패했어요', true);
+      ymMsg(e.message || T('자동 맞추기에 실패했어요'), true);
       YtEngine.previewPause();
     } finally {
       stopStream();
       ym.auto = false; ym.autoStop = false;
-      btn.classList.remove('busy'); lbl.textContent = '자동 맞추기';
+      btn.classList.remove('busy'); lbl.textContent = T('자동 맞추기');
     }
   }
   $('#ytAuto').addEventListener('click', ytAutoSync);
@@ -1080,16 +1118,16 @@
   $('#ytSaveBtn').addEventListener('click', ytSave);
   $('#ytCancelBtn').addEventListener('click', closeYtModal);
   $('#ytTap').addEventListener('pointerdown', (e) => { e.preventDefault(); ymTap(evTime(e)); });
-  $('#ytTapReset').addEventListener('click', () => { ym.taps = []; $('#ytTapRes').textContent = '탭 0회'; });
+  $('#ytTapReset').addEventListener('click', () => { ym.taps = []; $('#ytTapRes').textContent = T('탭 0회'); });
   $('#ytMark').addEventListener('click', () => { $('#ytOffset').value = +Math.max(0, YtEngine.songTime()).toFixed(3); });
   $('#ytMetro').addEventListener('click', () => {
     ym.metro = !ym.metro;
-    $('#ytMetro').innerHTML = `메트로놈 <b>${ym.metro ? 'ON' : 'OFF'}</b>`;
+    $('#ytMetro').innerHTML = ym.metro ? T('메트로놈 <b>ON</b>') : T('메트로놈 <b>OFF</b>');
     AudioEngine.resume();
   });
   document.querySelectorAll('#ytModal [data-shift]').forEach((b) => b.addEventListener('click', () => {
     const bpm = parseFloat($('#ytBpm').value), off = parseFloat($('#ytOffset').value) || 0;
-    if (!(bpm >= 40)) { ymMsg('BPM을 먼저 정해 주세요', true); return; }
+    if (!(bpm >= 40)) { ymMsg(T('BPM을 먼저 정해 주세요'), true); return; }
     $('#ytOffset').value = +Math.max(0, off + (+b.dataset.shift) * 60 / bpm).toFixed(3);
   }));
   document.querySelectorAll('#ytModal [data-yt]').forEach((b) => b.addEventListener('click', () => {

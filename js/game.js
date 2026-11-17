@@ -179,7 +179,8 @@ class RhythmGame {
     this.dpr = dpr; this.W = W; this.H = H;
     let lw;
     if (this.N === 4) {
-      lw = Math.round(clamp(Math.min(H * 0.115, (W - 12) / 4), 52, 128));
+      // 가로 화면(폰 눕힘)은 세로 길이 기준이 너무 좁아지므로 더 넓게
+      lw = Math.round(clamp(Math.min(H * (W > H ? 0.2 : 0.115), (W - 12) / 4), 52, 128));
       this.laneW = [lw, lw, lw, lw];
     } else {
       lw = Math.round(clamp(Math.min(H * 0.08, W * 0.075, (W - 12) / 7.7), 34, 86));
@@ -1296,7 +1297,7 @@ class RhythmGame {
         g.font = `600 ${Math.round(this.lw * (this.N === 4 ? 0.26 : 0.32))}px ${FONT_D}`;
         g.fillText(KEY_LABELS[l], x + w / 2, capY + off + capH * 0.42);
       }
-      if (KEY_KR[l] && !this.hideLabels) {
+      if (KEY_KR[l] && !this.hideLabels && this.showKr !== false) {
         g.font = `400 ${Math.round(this.lw * 0.17)}px ${FONT_K}`;
         g.fillStyle = p ? 'rgba(255,255,255,0.9)' : sk.capSub;
         g.fillText(KEY_KR[l], x + w / 2, capY + off + capH * 0.77);
@@ -1542,13 +1543,13 @@ class RhythmGame {
       this.outlinedText(g, `● REC  ${this.diff}`, cx, 40, '#ff4d6d', '#ffffff', 5);
       g.globalAlpha = 1;
       g.font = `400 ${Math.round(lw * 0.2)}px ${FONT_K}`;
-      this.outlinedText(g, '박자에 맞춰 키를 쳐서 채보를 만들어요 · 길게 누르면 롱노트 · Esc → 저장/취소', cx, 40 + lw * 0.42, '#ffffff', 'rgba(59,51,88,0.7)', 4);
+      this.outlinedText(g, T('박자에 맞춰 키를 쳐서 채보를 만들어요 · 길게 누르면 롱노트 · Esc → 저장/취소'), cx, 40 + lw * 0.42, '#ffffff', 'rgba(59,51,88,0.7)', 4);
     }
     if (this.song.yt && YtEngine.waiting() && this.state === 'playing') {
       g.textAlign = 'center';
       g.font = `600 ${Math.round(lw * 0.26)}px ${FONT_K}`;
       g.globalAlpha = 0.7 + 0.3 * Math.sin(now / 150);
-      this.outlinedText(g, '영상 불러오는 중...', cx, H * 0.5, '#ffffff', 'rgba(59,51,88,0.7)', 5);
+      this.outlinedText(g, T('영상 불러오는 중...'), cx, H * 0.5, '#ffffff', 'rgba(59,51,88,0.7)', 5);
       g.globalAlpha = 1;
     }
 
