@@ -236,7 +236,7 @@
       settings.hitSound = hs.value;
       AudioEngine.setSfxKind(hs.value);
       saveSettings();
-      AudioEngine.resume().then(() => { if (hs.value === 'taiko' || hs.value === 'tabla') { AudioEngine.playHit(null, 1); setTimeout(() => AudioEngine.playHit(null, 0), 280); } else AudioEngine.playHit(); });
+      AudioEngine.resume().then(() => { if (hs.value === 'tabla') { AudioEngine.playHit(null, 1); setTimeout(() => AudioEngine.playHit(null, 0), 280); } else AudioEngine.playHit(); });
     });
     const auto = $('#setAuto');
     auto.checked = !!settings.auto;

@@ -11,7 +11,5 @@ Sonic Pi 라이선스: "All the bundled samples are individually licensed under 
 | drum_tom_mid_hard.flac | 탐 드럼 |
 | drum_cymbal_closed.flac | 하이햇 |
 | drum_cowbell.flac | 카우벨 |
-| drum_tom_lo_hard.flac | 태고 느낌 '동' (음높이를 낮춰서 사용) |
-| tabla_te1.flac | 태고 느낌 '캇' |
 | tabla_ghe1.flac | 타블라 안쪽 '게' |
 | tabla_na.flac | 타블라 바깥쪽 '나' |

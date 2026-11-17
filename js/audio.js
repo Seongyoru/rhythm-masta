@@ -76,18 +76,17 @@ const AudioEngine = (() => {
   /* ---------------- 타격음 : 실제 악기 녹음 (sounds/ 폴더, CC0 퍼블릭 도메인) ----------------
    * 출처 : Sonic Pi 기본 샘플 (freesound.org 녹음, CC0 1.0)                                   */
   const SFX_KINDS = {
-    taiko: '태고 느낌 (동/캇)', snare: '스네어', kick: '킥 드럼', tom: '탐 드럼', hat: '하이햇',
+    snare: '스네어', kick: '킥 드럼', tom: '탐 드럼', hat: '하이햇',
     cowbell: '카우벨', tabla: '타블라 (게/나)', custom: '내 효과음 파일', off: '없음',
   };
   // 이름 → [파일, 재생 속도(음높이), 음량]
   const SAMPLES = {
     snare: ['drum_snare_hard', 1, 0.9], kick: ['drum_heavy_kick', 1, 1], tom: ['drum_tom_mid_hard', 1, 0.95],
     hat: ['drum_cymbal_closed', 1, 0.8], cowbell: ['drum_cowbell', 1, 0.7],
-    don: ['drum_tom_lo_hard', 0.78, 1], ka: ['tabla_te1', 1.05, 0.95],
     tabla_in: ['tabla_ghe1', 1, 1], tabla_out: ['tabla_na', 1, 0.9],
   };
   // 안쪽 / 바깥쪽 레인에 다른 소리를 쓰는 종류
-  const PAIRS = { taiko: ['don', 'ka'], tabla: ['tabla_in', 'tabla_out'] };
+  const PAIRS = { tabla: ['tabla_in', 'tabla_out'] };
   let sfxKind = 'snare';
   const sampleBufs = {}, sampleLoading = {};
   function loadSample(name) {
@@ -205,13 +204,13 @@ const AudioEngine = (() => {
     s.start();
   }
   // 키를 누를 때 나는 소리 (누르는 순간 바로)
-  // 태고 · 타블라는 레인에 따라 안쪽(동 / 게) · 바깥쪽(캇 / 나) 소리가 다름
-  let taikoDon = [1, 2];
-  function setTaikoLanes(arr) { taikoDon = arr; }
+  // 타블라 · 내 효과음(2개)은 레인에 따라 안쪽 · 바깥쪽 소리가 다름
+  let innerLanes = [1, 2];
+  function setInnerLanes(arr) { innerLanes = arr; }
   function playHit(kind, lane) {
     const k = kind || sfxKind;
     if (k === 'off' || !ctx) return;
-    const inner = lane === undefined || lane === null || taikoDon.includes(lane);
+    const inner = lane === undefined || lane === null || innerLanes.includes(lane);
     if (k === 'chime') playBuf(hitBuf, 0.7);
     else if (PAIRS[k]) playSample(PAIRS[k][inner ? 0 : 1]);
     else if (k === 'custom') {
@@ -268,6 +267,6 @@ const AudioEngine = (() => {
 
   return {
     init, resume, decode, play, stop, pause, unpause, isRunning, context: () => init(),
-    songTime, songTimeAt, playHit, playChime, setMusicVolume, setSfxVolume, spectrum, setSfxKind, setTaikoLanes, setCustomSfx, SFX_KINDS, loadSample, previewBuffer, stopPreview,
+    songTime, songTimeAt, playHit, playChime, setMusicVolume, setSfxVolume, spectrum, setSfxKind, setInnerLanes, setCustomSfx, SFX_KINDS, loadSample, previewBuffer, stopPreview,
   };
 })();

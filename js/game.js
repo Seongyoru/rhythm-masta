@@ -143,7 +143,7 @@ class RhythmGame {
     setArr(KEY_LABELS, codes.map(keyLabel));
     setArr(KEY_KR, codes.map((c) => KEY_KO[c] || ''));
     SPACE_LANE = m.space;
-    AudioEngine.setTaikoLanes(this.N === 4 ? [1, 2] : [2, 3, 4]);
+    AudioEngine.setInnerLanes(this.N === 4 ? [1, 2] : [2, 3, 4]);
     if (this.sk) setArr(LANE_COLORS, m.colorIdx.map((i) => this.sk.lanes[i]));
     if (this.W) this.resize();
   }
