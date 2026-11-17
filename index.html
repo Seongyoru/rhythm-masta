@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- 스킨 색을 그대로 보여 주기 : 브라우저 · 기기 다크 모드가 페이지 색을 강제로 바꾸지 않게 -->
+<meta name="color-scheme" content="only light">
 <title>RHYTHM MASTA</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -67,8 +69,8 @@
       <div class="panel-head">
         <h2><svg class="h-ico"><use href="#i-note"/></svg>SONGS</h2>
         <div class="head-btns">
-          <button id="addYtBtn" class="btn ghost yt-btn"><i class="yt-ico"></i>유튜브</button>
-          <button id="addSongBtn" class="btn ghost">+ 음악 파일</button>
+          <button id="addYtBtn" class="btn ghost yt-btn" title="유튜브 영상 추가" aria-label="유튜브 영상 추가"><i class="yt-ico"></i><span class="b-txt">유튜브</span></button>
+          <button id="addSongBtn" class="btn ghost file-btn" title="음악 파일 추가" aria-label="음악 파일 추가"><b class="b-plus">+</b><svg class="b-ico" aria-hidden="true"><use href="#i-note"/></svg><span class="b-txt">음악 파일</span></button>
         </div>
         <input type="file" id="fileInput" accept="audio/*,.mp3,.ogg,.wav,.m4a,.flac" multiple hidden>
       </div>
