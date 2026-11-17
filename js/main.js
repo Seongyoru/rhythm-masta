@@ -230,7 +230,9 @@
     if (!AudioEngine.SFX_KINDS[settings.hitSound]) settings.hitSound = 'osu';
     hs.value = settings.hitSound;
     AudioEngine.setSfxKind(settings.hitSound);
+    $('#customSfxRow').hidden = settings.hitSound !== 'custom';
     hs.addEventListener('change', () => {
+      $('#customSfxRow').hidden = hs.value !== 'custom';
       settings.hitSound = hs.value;
       AudioEngine.setSfxKind(hs.value);
       saveSettings();
@@ -269,6 +271,61 @@
     for (const s of songs) applyCustom(s);
     if (songs.length) updateDetail();
   }
+
+  /* ---------------- 내 효과음 파일 (IndexedDB, 이 기기에만 저장) ---------------- */
+  const sfxDB = (() => {
+    let dbp = null;
+    const open = () => dbp || (dbp = new Promise((res, rej) => {
+      const rq = indexedDB.open('rm_sfx', 1);
+      rq.onupgradeneeded = () => rq.result.createObjectStore('files');
+      rq.onsuccess = () => res(rq.result);
+      rq.onerror = () => rej(rq.error);
+    }));
+    const tx = async (mode, fn) => { const db = await open(); return new Promise((res, rej) => { const t = db.transaction('files', mode); const r = fn(t.objectStore('files')); t.oncomplete = () => res(r && r.result); t.onerror = () => rej(t.error); }); };
+    return {
+      get: (k) => tx('readonly', (st) => st.get(k)),
+      put: (k, v) => tx('readwrite', (st) => st.put(v, k)),
+      del: (k) => tx('readwrite', (st) => st.delete(k)),
+    };
+  })();
+  async function loadCustomSfx() {
+    for (const slot of ['A', 'B']) {
+      try {
+        const rec = await sfxDB.get(slot);
+        $(`#csfx${slot}`).textContent = rec ? rec.name : '없음';
+        if (rec) AudioEngine.setCustomSfx(slot, await AudioEngine.decode(rec.data.slice(0)));
+        else AudioEngine.setCustomSfx(slot, null);
+      } catch (e) { console.warn(e); }
+    }
+  }
+  let csfxSlot = 'A';
+  document.querySelectorAll('#customSfxRow [data-slot]').forEach((b) => b.addEventListener('click', () => { csfxSlot = b.dataset.slot; $('#csfxInput').click(); }));
+  $('#csfxInput').addEventListener('change', async (e) => {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    if (f.size > 5 * 1024 * 1024) { toast('효과음 파일은 5MB 이하로 골라 주세요'); return; }
+    try {
+      const data = await f.arrayBuffer();
+      const buf = await AudioEngine.decode(data.slice(0));
+      if (buf.duration > 3) toast('3초보다 긴 소리예요. 짧은 효과음이 더 잘 맞아요');
+      await sfxDB.put(csfxSlot, { name: f.name, data });
+      AudioEngine.setCustomSfx(csfxSlot, buf);
+      $(`#csfx${csfxSlot}`).textContent = f.name;
+      await AudioEngine.resume();
+      AudioEngine.playHit('custom', csfxSlot === 'A' ? 1 : 0);
+      toast(`${csfxSlot === 'A' ? '기본' : '바깥쪽'} 효과음을 바꿨어요`);
+    } catch (err) {
+      console.error(err);
+      toast('이 파일은 소리로 읽을 수 없어요');
+    }
+  });
+  $('#csfxClear').addEventListener('click', async () => {
+    await sfxDB.del('A'); await sfxDB.del('B');
+    await loadCustomSfx();
+    toast('내 효과음을 지웠어요');
+  });
+  loadCustomSfx();
 
   /* ---------------- 키 설정 (PC) ---------------- */
   let keyBindOpen = false, bindLane = -1;

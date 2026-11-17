@@ -1112,3 +1112,10 @@ body.mobile .keybind-row { display: none; }
 .kb-lane.wait small { color: #fff; }
 .kb-msg { margin-top: 14px; min-height: 20px; text-align: center; font-size: 14px; color: var(--ink2); }
 .dk .kb-card { background: rgba(26, 22, 62, .97); border-color: rgba(255,255,255,.1); box-shadow: 0 30px 80px rgba(0,0,0,.5); }
+
+/* 내 효과음 파일 */
+.csfx-row { grid-column: 1 / -1; grid-template-columns: 92px 1fr; cursor: default; }
+.csfx-row[hidden] { display: none; }
+.csfx { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.csfx .btn b { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--apple-d); font-weight: 700; }
+.csfx small { flex-basis: 100%; font-size: 11px; color: var(--muted); }

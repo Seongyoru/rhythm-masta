@@ -145,6 +145,16 @@
           <span class="name">타격음</span>
           <select id="setHitSound"></select>
         </label>
+        <div class="row csfx-row" id="customSfxRow" hidden>
+          <span class="name">내 효과음</span>
+          <div class="csfx">
+            <button type="button" class="btn mini" data-slot="A">기본 · 안쪽 레인 <b id="csfxA">없음</b></button>
+            <button type="button" class="btn mini" data-slot="B">바깥쪽 레인 (선택) <b id="csfxB">없음</b></button>
+            <button type="button" class="btn mini ghost" id="csfxClear">지우기</button>
+            <small>파일은 이 기기 브라우저에만 저장돼요. 바깥쪽을 비워두면 모든 레인에 기본 소리가 나요.</small>
+          </div>
+          <input type="file" id="csfxInput" accept="audio/*,.wav,.mp3,.ogg,.m4a" hidden>
+        </div>
         <div class="row skin-row">
           <span class="name">스킨</span>
           <div class="skins" id="skinPicker"></div>
