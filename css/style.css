@@ -1182,3 +1182,20 @@ button.disclaimer, button.disclaimer-m { cursor: pointer; font: inherit; }
 .vibe-row { display: none; }
 body.mobile .vibe-row { display: grid; }
 .row .name .hint { display: block; margin-top: 2px; font-size: 10.5px; font-weight: 500; color: var(--muted); }
+
+/* ================= GAME START 위치 : PC 는 곡 정보 오른쪽, 모바일은 아래 고정 ================= */
+.detail-info { flex: 1; }
+.start-top {
+  flex: none; align-self: center;
+  margin: 0 4px 0 auto;
+  min-width: 250px; padding: 26px 34px;
+  border-radius: 28px;
+  font: 700 24px var(--fd); letter-spacing: 5px;
+  flex-direction: column; gap: 4px;
+}
+.start-top small { letter-spacing: 3px; }
+.start-bottom { display: none; }
+@media (max-width: 900px) {
+  .start-top { display: none; }
+  .start-bottom { display: flex; }
+}

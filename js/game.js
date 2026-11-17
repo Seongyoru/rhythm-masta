@@ -740,8 +740,15 @@ class RhythmGame {
     if (!this.raf) { this._lastFrame = performance.now(); this.raf = requestAnimationFrame(this._loop); }
   }
 
+  // 롱노트를 누르고 있는 동안 (모바일 진동용) 바깥에 알림
+  holdHook(lane, on, sec) {
+    if (this.settings && this.settings.auto) return;
+    if (this.hooks.onHold) this.hooks.onHold(lane, on, sec || 0);
+  }
+
   pause() {
     if (this.state !== 'playing') return;
+    if (this.hooks.onHold) this.hooks.onHold(-1, false);
     this.state = 'paused';
     const now = performance.now();
     for (let l = 0; l < this.N; l++) {
@@ -759,6 +766,7 @@ class RhythmGame {
 
   quit() {
     this.cancelEnding();
+    if (this.hooks.onHold) this.hooks.onHold(-1, false);
     if (this.clock) this.clock.stop();
     this.state = 'idle';
     if (this.raf) { cancelAnimationFrame(this.raf); this.raf = 0; }
@@ -847,6 +855,7 @@ class RhythmGame {
         }
         if (n.holding && t >= n.end) {
           n.holding = false; n.tailDone = true;
+          this.holdHook(l, false);
           this.judge('PERFECT', null, l, true);
           this.spawnHit(l, 'PERFECT');
           if (this.settings.auto) this.autoRelease[l] = t + 0.04;
@@ -902,7 +911,7 @@ class RhythmGame {
         if (n.end) { n.tailDone = true; this.judge('MISS', null, lane, true); }
       } else {
         this.spawnHit(lane, kind);
-        if (n.end) n.holding = true;
+        if (n.end) { n.holding = true; this.holdHook(lane, true, n.end - t); }
       }
       return;
     }
@@ -921,6 +930,7 @@ class RhythmGame {
       const n = ln[k];
       if (n.holding) {
         n.holding = false; n.tailDone = true;
+        this.holdHook(lane, false);
         const early = n.end - t;
         const kind = early <= JW.PERFECT ? 'PERFECT' : early <= JW.GREAT ? 'GREAT' : early <= JW.GOOD ? 'GOOD' : 'MISS';
         this.judge(kind, null, lane, true);

@@ -39,7 +39,24 @@
 
   if (!['ko', 'ja', 'en'].includes(settings.lang)) settings.lang = I18N.detect();
   I18N.setLang(settings.lang);
-  const game = new RhythmGame($('#game'), { onFinish: showResult });
+  // 진동 : 탭은 아주 짧게, 롱노트는 누르고 있는 동안 계속 (안드로이드 등 지원 기기)
+  const holdEnds = new Map();
+  const canVibe = () => settings.vibrate !== false && IS_MOBILE && !!navigator.vibrate;
+  function vibe(ms) { try { navigator.vibrate(ms); } catch (err) { /* ignore */ } }
+  function refreshHoldVibe() {
+    if (!canVibe()) return;
+    let left = 0;
+    const now = performance.now();
+    for (const end of holdEnds.values()) left = Math.max(left, end - now);
+    vibe(left > 20 ? Math.round(left) : 0);
+  }
+  function onHold(lane, on, sec) {
+    if (lane < 0) { holdEnds.clear(); if (canVibe()) vibe(0); return; }
+    if (on) holdEnds.set(lane, performance.now() + sec * 1000);
+    else holdEnds.delete(lane);
+    refreshHoldVibe();
+  }
+  const game = new RhythmGame($('#game'), { onFinish: showResult, onHold });
   game.showKr = settings.lang === 'ko';
   if (!KEY_MODES[settings.keyMode]) settings.keyMode = '7k';
   if (IS_MOBILE) settings.keyMode = '4k'; // 모바일(터치)은 4키 고정
@@ -117,7 +134,7 @@
     });
     $('#recDiff').textContent = diff;
     const needSetup = s.needsSync && !(s.charts && s.charts[diff]);
-    $('#startBtn').innerHTML = needSetup ? `${T('첫 박 맞추기')} <small>ENTER</small>` : 'GAME START <small>ENTER</small>';
+    document.querySelectorAll('[data-start]').forEach((b) => { b.innerHTML = needSetup ? `${T('첫 박 맞추기')} <small>ENTER</small>` : 'GAME START <small>ENTER</small>'; });
     $('#songTag').textContent = s.designed ? T('MGA · 실측 채보') : s.sample ? 'SAMPLE · YOUTUBE' : $('#songTag').textContent;
     if (s.needsSync) $('#songMeta').textContent = [T(s.artist), s.bpm ? `${Math.round(s.bpm)} BPM` : '', T('첫 박 위치를 한 번 맞추면 채보가 만들어져요')].filter(Boolean).join('  ·  ');
     $('#recBtn').disabled = !!s.loading || !s.charts;
@@ -127,7 +144,7 @@
     $('#delSongBtn').hidden = !s.yt;
     const b = bests[ckey(s.id, diff)];
     $('#bestInfo').textContent = b ? `BEST  ${String(b.score).padStart(7, '0')}  ·  ${b.rank}  ·  ${b.acc.toFixed(2)}%${b.fc ? '  ·  FC' : ''}` : 'BEST  -';
-    $('#startBtn').disabled = !!s.loading;
+    document.querySelectorAll('[data-start]').forEach((b) => { b.disabled = !!s.loading; });
   }
 
   /* ---------------- 곡 선택 미리듣기 ---------------- */
@@ -803,7 +820,7 @@
     if (lane < 0) return;
     pointerLane.set(e.pointerId, lane);
     // 터치로 칠 때 아주 짧은 진동 (안드로이드 등 지원 기기만)
-    if (settings.vibrate !== false && e.pointerType === 'touch' && navigator.vibrate) { try { navigator.vibrate(12); } catch (err) { /* ignore */ } }
+    if (canVibe() && e.pointerType === 'touch') { if (holdEnds.size) refreshHoldVibe(); else vibe(12); }
     try { cv.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
     game.press(lane, evTime(e));
   });
@@ -839,7 +856,7 @@
   });
   $('#songList').addEventListener('dblclick', (e) => { if (e.target.closest('.song-item')) startGame(); });
   document.querySelectorAll('.diff').forEach((b) => b.addEventListener('click', () => setDiff(b.dataset.d)));
-  $('#startBtn').addEventListener('click', startGame);
+  document.querySelectorAll('[data-start]').forEach((b) => b.addEventListener('click', () => startGame()));
   $('#addSongBtn').addEventListener('click', () => $('#fileInput').click());
   $('#fileInput').addEventListener('change', (e) => { addFiles(e.target.files); e.target.value = ''; });
   document.querySelectorAll('[data-act]').forEach((b) => b.addEventListener('click', () => {
