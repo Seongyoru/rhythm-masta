@@ -1119,3 +1119,30 @@ body.mobile .keybind-row { display: none; }
 .csfx { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .csfx .btn b { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--apple-d); font-weight: 700; }
 .csfx small { flex-basis: 100%; font-size: 11px; color: var(--muted); }
+
+/* ================= 비공식 안내 문구 ================= */
+.brand .disclaimer { margin-left: auto; letter-spacing: 0; font: 600 11.5px var(--fk); }
+.disclaimer-m { display: none; }
+@media (max-width: 900px) {
+  .brand .disclaimer { display: none; }
+  .disclaimer-m {
+    display: block; padding: 10px 6px 4px; text-align: center;
+    font: 500 11px/1.6 var(--fk); color: var(--ink2); opacity: .85;
+  }
+}
+
+/* 모바일 : 4키 고정(키 모드 숨김), 넓은 설정 항목은 이름 위 · 내용 아래 */
+body.mobile .mode-row { display: none; }
+@media (max-width: 900px) {
+  .skin-row, .mode-row, .csfx-row, .keybind-row { grid-template-columns: 1fr; gap: 6px; }
+  .skin-row .skins { grid-template-columns: repeat(2, 1fr); }
+  .skin-opt { padding: 8px 10px; }
+}
+@media (max-width: 900px) {
+  .menu-body { grid-auto-rows: max-content; align-content: start; }
+  .menu-body > .panel.detail { min-height: auto; }
+}
+@media (max-width: 900px) {
+  .disclaimer-m { margin: 6px auto 4px; padding: 8px 14px; border-radius: 14px; background: rgba(255, 255, 255, .72); color: var(--ink); opacity: 1; }
+  .dk .disclaimer-m { background: rgba(0, 0, 0, .35); color: #fff; }
+}

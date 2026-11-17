@@ -39,6 +39,7 @@
 
   const game = new RhythmGame($('#game'), { onFinish: showResult });
   if (!KEY_MODES[settings.keyMode]) settings.keyMode = '7k';
+  if (IS_MOBILE) settings.keyMode = '4k'; // 모바일(터치)은 4키 고정
   if (!settings.keys || typeof settings.keys !== 'object') settings.keys = {};
   game.setMode(settings.keyMode, settings.keys[settings.keyMode]);
   game.hideLabels = IS_MOBILE; // 모바일(터치)에서는 건반에 키 글자 숨김
