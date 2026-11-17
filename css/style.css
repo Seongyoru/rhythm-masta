@@ -1256,3 +1256,12 @@ body.dk .chip-btn.on { background: #ffd23f; color: #4a3300; }
 body.mobile .song-filter { margin-bottom: 8px; gap: 6px; }
 body.mobile .search-box { height: 36px; }
 body.mobile .search-box input { font-size: 16px; }
+
+/* 가로 스크롤 방지 : 세로로만 스크롤되는 영역은 가로 넘침을 잘라낸다 (폰의 소수점 픽셀 · 터치 후 남는 hover 효과 대비) */
+.song-list { overflow-x: hidden; }
+@media (max-width: 900px) { .menu-body { overflow-x: hidden; } }
+body.mobile .menu-body, body.mobile .detail { overflow-x: hidden; }
+@media (hover: none) {
+  .song-item:hover { transform: none; }
+  .song-item.sel:hover { transform: scale(1.02); }
+}
