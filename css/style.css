@@ -375,7 +375,9 @@ input[type=range]::-moz-range-thumb { width: 16px; height: 16px; border: 3px sol
   outline: none;
 }
 .dk .row select { background: rgba(255,255,255,.08); border-color: rgba(255,255,255,.18); }
-.dk .row select option { color: #222; }
+select option { background: #fff; color: #2a2440; }
+.dk select { color-scheme: dark; }
+.dk select option { background: #2a2540; color: #fff; }
 .toggle .switch {
   grid-column: 3;
   justify-self: end;
