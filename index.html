@@ -3,8 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<!-- 스킨 색을 그대로 보여 주기 : 브라우저 · 기기 다크 모드가 페이지 색을 강제로 바꾸지 않게 -->
-<meta name="color-scheme" content="only light">
+<!-- 스킨 색을 그대로 보여 주기 : 브라우저 · 기기 다크 모드가 페이지 색을 강제로 바꾸지 않게
+     삼성 인터넷은 다크 모드를 지원한다고 밝힌 사이트에만 강제 다크를 끄므로 light dark 로 선언하고,
+     실제 색은 css 의 :root { color-scheme: only light } 와 스킨 색으로 어느 모드에서나 같게 유지한다 -->
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
 <title>RHYTHM MASTA</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
