@@ -1300,3 +1300,24 @@ body.mobile .song-item .info b { white-space: normal; display: -webkit-box; -web
 .loading-cancel { padding: 8px 22px; font-size: 13px; }
 body.yt-wait #ytWrap { visibility: visible; z-index: 40; border-radius: 14px; pointer-events: auto; }
 body.yt-wait #ytHost { left: 0; top: 0; width: 100%; height: 100%; transform: none; filter: none; }
+
+/* 방문자 수 (오늘 · 누적) */
+.visits {
+  display: inline-flex; align-items: center; gap: 5px;
+  margin-left: 14px; padding: 5px 12px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, .7); border: 1.5px solid #fff;
+  box-shadow: 0 4px 14px rgba(120, 90, 200, .1);
+  font: 600 11.5px var(--fk); color: var(--ink2); white-space: nowrap;
+}
+.visits[hidden] { display: none !important; }
+.visits svg { width: 15px; height: 15px; fill: none; stroke: var(--apple-d); stroke-width: 2.2; stroke-linejoin: round; }
+.visits b { font: 700 13px var(--fd); color: var(--ink); letter-spacing: .3px; }
+.visits i { width: 1px; height: 11px; margin: 0 3px; background: currentColor; opacity: .35; }
+.dk .visits { background: rgba(255, 255, 255, .08); border-color: rgba(255, 255, 255, .12); color: rgba(255, 255, 255, .75); }
+.dk .visits b { color: #fff; }
+.visits-m { display: none; }
+@media (max-width: 900px) {
+  .brand .visits { display: none; }
+  .visits.visits-m { display: flex; width: max-content; margin: 8px auto 0; }
+}

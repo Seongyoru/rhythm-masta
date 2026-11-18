@@ -182,6 +182,7 @@ PC에서는 메뉴 설정의 **키 모드**에서 7키 / 4키를 고를 수 있�
 - `sounds/` 타격음 녹음 (CC0, 출처는 sounds/CREDITS.md)
 - `js/skins.js` 스킨 정의 (색 · 노트 스타일 · 배경)
 - `js/youtube.js` 유튜브 플레이어 재생 · 싱크 · 탭 템포
+- `js/visits.js` 오늘 · 누적 방문자 수 (GoatCounter, 쿠키 없음)
 - `start.bat` / `serve.ps1` PC에서 실행 (유튜브 재생용 간이 웹서버)
 - `start-mobile.bat` / `serve-lan.ps1` 같은 와이파이의 휴대폰에서도 접속할 수 있게 실행
 - `js/demo.js` 내장 데모곡 합성 (Neon Pulse, 140BPM)
