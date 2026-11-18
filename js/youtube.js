@@ -21,6 +21,7 @@ const YtEngine = (() => {
   let holdT = 0, waitSince = 0, startRep = 0, pausedFrom = '';
   let base = 0, basePerf = 0, lastRep = -1;
   let volume = 0.8;
+  let prepToken = 0;              // prepare() 취소용
 
   const ERR = {
     2: '영상 주소가 올바르지 않아요',
@@ -83,9 +84,11 @@ const YtEngine = (() => {
   const state = () => (player && player.getPlayerState ? player.getPlayerState() : -1);
   const cur = () => (player && player.getCurrentTime ? player.getCurrentTime() || 0 : 0);
 
-  /* 영상을 실제로 재생 가능한 상태로 만든다 (광고 · 버퍼링 통과 후 시작 위치에 정지) */
+  /* 영상을 실제로 재생 가능한 상태로 만든다 (광고 · 버퍼링 통과 후 시작 위치에 정지)
+   * onStatus(문구, 진행도, slow) : slow = 2.5초가 지나도 시작이 안 됨 (대개 유튜브 광고) */
   async function prepare(id, startSec, onStatus) {
     snipToken++; clearTimeout(snipStop); clearInterval(snipFade);
+    const my = ++prepToken;
     mode = 'idle';
     start = startSec || 0;
     lastErr = null;
@@ -97,11 +100,19 @@ const YtEngine = (() => {
     const t0 = now();
     await new Promise((res, rej) => {
       const tick = () => {
+        if (my !== prepToken) { const e = new Error('cancelled'); e.cancelled = true; return rej(e); }
         if (lastErr !== null) return rej(new Error(errMsg(lastErr)));
         const st = state(), ct = cur();
         if (st === 1 && ct > start + 0.12) return res();
-        if (now() - t0 > 45000) return rej(new Error(T('영상을 불러오지 못했어요 (시간 초과)')));
-        if (onStatus) onStatus(st === 3 ? T('영상 버퍼링 중...') : T('영상 준비 중... (광고가 나오면 끝날 때까지 기다려 주세요)'), Math.min(0.95, (now() - t0) / 8000));
+        const el = now() - t0;
+        // 광고는 길면 1분이 넘기도 해서 넉넉히 기다린다 (취소 버튼으로 언제든 그만둘 수 있음)
+        if (el > 150000) return rej(new Error(T('영상을 불러오지 못했어요 (시간 초과)')));
+        const slow = el > 2500;
+        if (onStatus) {
+          onStatus(slow ? T('유튜브 광고가 나오는 중일 수 있어요. 끝나면 자동으로 시작해요')
+            : st === 3 ? T('영상 버퍼링 중...') : T('영상 준비 중...'),
+          slow ? Math.min(0.95, 0.3 + (el - 2500) / 60000) : Math.min(0.3, el / 8000), slow);
+        }
         if (st === 5 || st === -1 || st === 2) p.playVideo();
         setTimeout(tick, 120);
       };
@@ -191,6 +202,10 @@ const YtEngine = (() => {
       leadPerf = now() - (holdT + leadDur) * 1000;
     } else goStart(holdT);
   }
+  function cancelPrepare() {
+    prepToken++;
+    if (player && player.pauseVideo) { try { player.pauseVideo(); } catch (e) { /* ignore */ } }
+  }
   function stop() {
     mode = 'idle';
     if (player && player.pauseVideo) { try { player.pauseVideo(); } catch (e) { /* ignore */ } }
@@ -256,7 +271,7 @@ const YtEngine = (() => {
   function setVolume(v) { volume = v; if (player && player.setVolume && mode !== 'idle') player.setVolume(Math.round(v * 100)); }
 
   return {
-    parseId, prepare, begin, songTime, songTimeAt, pause, resume, stop, waiting,
+    parseId, prepare, cancelPrepare, begin, songTime, songTimeAt, pause, resume, stop, waiting,
     previewPlay, previewPause, previewSeek, isPlaying, setVolume, snippet, stopSnippet,
     get mode() { return mode; },
   };

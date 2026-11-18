@@ -95,7 +95,19 @@
     if (text) $('#loadingText').textContent = text;
     $('#loadingBar').style.width = `${Math.round((p || 0) * 100)}%`;
   }
-  const hideLoading = () => $('#loading').classList.remove('show');
+  const hideLoading = () => { $('#loading').classList.remove('show'); adWait(false); };
+  /* 유튜브 광고 대기 화면 : 영상이 늦게 시작되면 로딩 카드 안에 영상을 그대로 보여준다 */
+  function adWait(on) {
+    const was = document.body.classList.contains('yt-wait');
+    $('#loadingVideo').hidden = !on;
+    $('#loadingAd').hidden = !on;
+    $('#loadingCancel').hidden = !on;
+    document.body.classList.toggle('yt-wait', on);
+    if (on) {
+      const r = $('#loadingVideo').getBoundingClientRect();
+      Object.assign($('#ytWrap').style, { left: `${r.left}px`, top: `${r.top}px`, width: `${r.width}px`, height: `${r.height}px`, right: 'auto', bottom: 'auto' });
+    } else if (was) $('#ytWrap').removeAttribute('style');
+  }
 
   function setScreen(name) {
     screen = name;
@@ -722,14 +734,15 @@
       starting = true;
       try {
         setLoading(T('영상 준비 중...'), 0.05);
-        const info = await YtEngine.prepare(s.yt.videoId, 0, (m, pr) => setLoading(m, pr));
+        const info = await YtEngine.prepare(s.yt.videoId, 0, (m, pr, slow) => { setLoading(m, pr); adWait(!!slow); });
         if (info.duration && Math.abs(info.duration - s.duration) > 1) s.duration = info.duration;
         YtEngine.setVolume(settings.music);
       } catch (e) {
-        console.error(e);
-        toast(e.message || T('영상을 불러오지 못했어요'));
         starting = false;
         hideLoading();
+        if (e.cancelled) return;
+        console.error(e);
+        toast(e.message || T('영상을 불러오지 못했어요'));
         return;
       }
       starting = false;
@@ -966,6 +979,8 @@
   favEl.addEventListener('click', () => { listOpt.fav = !listOpt.fav; store.set('rm_list', listOpt); showFav(); refilter(); });
   document.querySelectorAll('.diff').forEach((b) => b.addEventListener('click', () => setDiff(b.dataset.d)));
   document.querySelectorAll('[data-start]').forEach((b) => b.addEventListener('click', () => startGame()));
+  $('#loadingCancel').addEventListener('click', () => YtEngine.cancelPrepare());
+  window.addEventListener('resize', () => { if (document.body.classList.contains('yt-wait')) adWait(true); });
   $('#addSongBtn').addEventListener('click', () => $('#fileInput').click());
   $('#fileInput').addEventListener('change', (e) => { addFiles(e.target.files); e.target.value = ''; });
   document.querySelectorAll('[data-act]').forEach((b) => b.addEventListener('click', () => {

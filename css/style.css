@@ -1293,3 +1293,10 @@ body.mobile .song-item .info b { white-space: normal; display: -webkit-box; -web
 @media (prefers-color-scheme: dark) {
   :root { color-scheme: only light; }
 }
+
+/* 유튜브 광고 대기 : 영상을 로딩 카드 안에 선명하게 보여주고 건너뛰기를 누를 수 있게 */
+.loading-video { width: 100%; aspect-ratio: 16 / 9; border-radius: 14px; background: #000; }
+.loading-ad { margin: -4px 0 0; font-size: 12px; line-height: 1.5; color: var(--muted); word-break: keep-all; }
+.loading-cancel { padding: 8px 22px; font-size: 13px; }
+body.yt-wait #ytWrap { visibility: visible; z-index: 40; border-radius: 14px; pointer-events: auto; }
+body.yt-wait #ytHost { left: 0; top: 0; width: 100%; height: 100%; transform: none; filter: none; }
