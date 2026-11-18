@@ -853,23 +853,15 @@
       if (p < 1 && screen === 'result') requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
-    lastResult = r;
+    lastResult = { ...r, newRecord, diffColor: DIFF_COL[r.diff], rankColor: RANK_COL[r.rank] };
     $('#resShare').hidden = !!r.auto; // 오토 플레이 결과는 공유하지 않는다
     setScreen('result');
   }
 
-  // 결과를 X 글쓰기 창으로 (곡 · 난이도 · 랭크 · 점수가 미리 채워진다)
+  // 결과 공유 창 (결과 카드 이미지 + 기기 공유 · X · LINE · 저장 · 링크 복사)
   let lastResult = null;
-  const SITE_URL = 'https://seongyoru.github.io/rhythm-masta/';
   function shareResult() {
-    const r = lastResult;
-    if (!r) return;
-    const badge = r.ap ? ' · ALL PERFECT' : r.fc ? ' · FULL COMBO' : '';
-    const text = T('🍏 RHYTHM MASTA 에서 「{title}」 {diff} LV.{lv} 플레이!', {
-      title: r.song.title, diff: r.diff, lv: r.song.charts[r.diff].level,
-    }) + `\nRANK ${r.rank} · SCORE ${String(r.score).padStart(7, '0')} · ${r.acc.toFixed(2)}%${badge}\n#RHYTHMMASTA`;
-    const u = `https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(SITE_URL)}`;
-    window.open(u, '_blank', 'noopener');
+    if (lastResult) ShareCard.open(lastResult);
   }
 
   /* ---------------- 입력 ---------------- */
@@ -903,6 +895,7 @@
       else if (e.code === 'KeyS') saveRecNow();
       return;
     }
+    if (ShareCard.isOpen) { if (e.code === 'Escape') { e.preventDefault(); ShareCard.close(); } return; }
     if (screen === 'result') {
       if (lane !== undefined) e.preventDefault();
       if (e.code === 'KeyR' || e.code === 'Enter') { e.preventDefault(); retry(); }

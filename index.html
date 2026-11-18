@@ -9,6 +9,17 @@
 <meta name="color-scheme" content="light dark">
 <meta name="supported-color-schemes" content="light dark">
 <title>RHYTHM MASTA</title>
+<!-- 링크 미리보기 (카카오톡 · LINE · X 등) -->
+<meta name="description" content="Mrs. GREEN APPLE 노래로 즐기는 비공식 팬메이드 웹 리듬게임 · ミセスの曲で遊べる非公式ファンメイドWebリズムゲーム">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="RHYTHM MASTA">
+<meta property="og:title" content="RHYTHM MASTA">
+<meta property="og:description" content="Mrs. GREEN APPLE 노래로 즐기는 비공식 팬메이드 웹 리듬게임 · ミセスの曲で遊べる非公式ファンメイドWebリズムゲーム">
+<meta property="og:url" content="https://seongyoru.github.io/rhythm-masta/">
+<meta property="og:image" content="https://seongyoru.github.io/rhythm-masta/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="675">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Jua&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -269,7 +280,26 @@
       <button class="btn primary" data-act="retry">다시하기 <small>R</small></button>
       <button class="btn ghost" data-act="menu">곡 선택 <small>ESC</small></button>
     </div>
-    <button type="button" class="btn share-x" id="resShare"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg><span>X에 공유</span></button>
+    <button type="button" class="btn share-x" id="resShare"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a3 3 0 1 0-2.8-4L8.6 7.6a3 3 0 1 0 0 4.8l6.6 3.6A3 3 0 1 0 16 14.3l-6.5-3.5a3 3 0 0 0 0-1.6L16 5.7A3 3 0 0 0 18 8z"/></svg><span>결과 공유</span></button>
+  </div>
+</div>
+
+<!-- ============ 결과 공유 ============ -->
+<div id="shareModal" class="overlay">
+  <div class="share-card">
+    <div class="share-preview">
+      <img id="shareImg" alt="" hidden>
+      <div id="shareWait" class="share-wait">이미지를 만드는 중...</div>
+    </div>
+    <div class="share-btns">
+      <button type="button" class="btn primary share-native" id="shareNative" hidden>공유하기</button>
+      <button type="button" class="btn share-x" id="shareX"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg><span>X에 공유</span></button>
+      <button type="button" class="btn share-line" id="shareLine">LINE</button>
+      <button type="button" class="btn" id="shareSave">이미지 저장</button>
+      <button type="button" class="btn" id="shareCopy">링크 복사</button>
+    </div>
+    <p class="share-tip" id="shareTip"></p>
+    <button type="button" class="btn ghost share-close" id="shareClose">닫기 <small>ESC</small></button>
   </div>
 </div>
 
@@ -389,6 +419,7 @@
 <script src="js/chart.js"></script>
 <script src="js/songdata.js"></script>
 <script src="js/game.js"></script>
+<script src="js/share.js"></script>
 <script src="js/main.js"></script>
 <script src="js/visits.js"></script>
 </body>
