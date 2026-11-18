@@ -214,6 +214,8 @@ const I18N = (() => {
     '유튜브 광고가 나오는 중일 수 있어요. 끝나면 자동으로 시작해요': ['YouTubeの広告が流れているかもしれません。終わると自動で始まります', 'A YouTube ad may be playing. The game starts automatically when it ends'],
     '유튜브 프리미엄이 아니면 곡 앞에 광고가 나올 수 있어요. 건너뛰기 버튼이 보이면 눌러도 돼요': ['YouTube Premiumでない場合、曲の前に広告が流れることがあります。スキップボタンが出たら押してもOKです', 'Without YouTube Premium, an ad may play before the song. You can press Skip when it appears'],
     '취소': ['キャンセル', 'Cancel'],
+    'X에 공유': ['Xでシェア', 'Share on X'],
+    '🍏 RHYTHM MASTA 에서 「{title}」 {diff} LV.{lv} 플레이!': ['🍏 RHYTHM MASTAで「{title}」{diff} LV.{lv}をプレイ！', '🍏 Played "{title}" {diff} LV.{lv} on RHYTHM MASTA!'],
     '오늘': ['今日', 'Today'],
     '누적': ['累計', 'Total'],
     '방문자 수': ['訪問者数', 'Visitors'],
