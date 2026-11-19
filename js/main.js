@@ -19,7 +19,7 @@
     } catch (e) { return false; }
   })();
   if (IS_MOBILE) document.body.classList.add('mobile');
-  const settings = Object.assign({ laneAlpha: 1, keyMode: IS_MOBILE ? '4k' : '7k', preview: true, vibrate: true, speed: 5.5, offset: 0, music: 0.8, sfx: 0.6, auto: false, skin: DEFAULT_SKIN, hitSound: 'snare' }, store.get('rm_settings', {}));
+  const settings = Object.assign({ laneAlpha: 1, hudAlpha: 0.7, keyMode: IS_MOBILE ? '4k' : '7k', preview: true, vibrate: true, speed: 5.5, offset: 0, music: 0.8, sfx: 0.6, auto: false, skin: DEFAULT_SKIN, hitSound: 'snare' }, store.get('rm_settings', {}));
   const bests = store.get('rm_best', {});
   const ytList = store.get('rm_yt', []);          // 유튜브 곡 목록 (영상 ID · BPM · 첫 박 ...)
   const customCharts = store.get('rm_charts', {}); // 녹화로 만든 채보 : "곡ID|난이도" → chart
@@ -284,6 +284,7 @@
     bind('#setMusic', 'music', (v) => `${Math.round(v * 100)}%`, parseFloat);
     bind('#setSfx', 'sfx', (v) => `${Math.round(v * 100)}%`, parseFloat);
     bind('#setLane', 'laneAlpha', (v) => `${Math.round(v * 100)}%`, parseFloat);
+    bind('#setHud', 'hudAlpha', (v) => `${Math.round(v * 100)}%`, parseFloat);
     renderSkins();
     renderKeyguide();
     renderModeBtns();

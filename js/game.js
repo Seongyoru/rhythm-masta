@@ -1459,23 +1459,26 @@ class RhythmGame {
 
     g.textAlign = 'center';
     g.textBaseline = 'middle';
+    // 콤보 · 판정 글자 불투명도 (설정) — 노트를 가리지 않게 기본은 살짝 투명
+    const ha = this.settings && typeof this.settings.hudAlpha === 'number' ? clamp(this.settings.hudAlpha, 0.1, 1) : 0.7;
 
     // 콤보
     if (this.combo >= 3) {
       const pop = Math.max(0, 1 - (now - this.comboPopT) / 160);
-      const s = 1 + pop * 0.22;
+      const s = 1 + pop * 0.2;
       g.save();
+      g.globalAlpha = ha;
       g.translate(cx, H * 0.3);
       g.scale(s, s);
       const gold = this.combo >= 100;
-      g.font = `600 ${Math.round(lw * 0.24)}px ${FONT_D}`;
-      ls('6px');
+      g.font = `600 ${Math.round(lw * 0.2)}px ${FONT_D}`;
+      ls('5px');
       g.fillStyle = gold ? '#ffcf4a' : this.sk.comboLabel;
-      g.fillText(this.rec ? 'NOTES' : 'COMBO', 0, -lw * 0.78);
+      g.fillText(this.rec ? 'NOTES' : 'COMBO', 0, -lw * 0.64);
       ls('0px');
-      g.font = `700 ${Math.round(lw * 1.15)}px ${FONT_D}`;
+      g.font = `700 ${Math.round(lw * 0.92)}px ${FONT_D}`;
       const fill = gold ? rainbowGrad(g, -lw, lw) : this.sk.comboFill;
-      this.outlinedText(g, String(this.combo), 0, 0, fill, gold ? '#ffffff' : this.sk.comboStroke, gold ? 7 : 5);
+      this.outlinedText(g, String(this.combo), 0, 0, fill, gold ? '#ffffff' : this.sk.comboStroke, gold ? 6 : 4);
       g.restore();
     }
 
@@ -1487,19 +1490,19 @@ class RhythmGame {
         const pop = Math.max(0, 1 - age / 0.1);
         const a = age < 0.4 ? 1 : 1 - (age - 0.4) / 0.2;
         g.save();
-        g.globalAlpha = a;
+        g.globalAlpha = a * ha;
         g.translate(cx, this.judgeY - H * 0.21 - (1 - pop) * 4);
         g.rotate(kind === 'MISS' ? -0.06 : 0);
-        g.scale(1 + pop * 0.35, 1 + pop * 0.35);
-        g.font = `700 ${Math.round(lw * 0.56)}px ${FONT_D}`;
+        g.scale(1 + pop * 0.3, 1 + pop * 0.3);
+        g.font = `700 ${Math.round(lw * 0.46)}px ${FONT_D}`;
         ls('2px');
-        const fill = kind === 'PERFECT' ? rainbowGrad(g, -lw * 1.6, lw * 1.6) : j.color;
-        this.outlinedText(g, j.label, 0, 0, fill, '#ffffff', 7);
+        const fill = kind === 'PERFECT' ? rainbowGrad(g, -lw * 1.3, lw * 1.3) : j.color;
+        this.outlinedText(g, j.label, 0, 0, fill, '#ffffff', 6);
         ls('0px');
         const d = this.lastJudge.diff;
         if (d !== null && kind !== 'PERFECT' && kind !== 'MISS') {
-          g.font = `600 ${Math.round(lw * 0.21)}px ${FONT_D}`;
-          this.outlinedText(g, `${d < 0 ? 'FAST' : 'SLOW'} ${d < 0 ? '' : '+'}${Math.round(d * 1000)}ms`, 0, lw * 0.48,
+          g.font = `600 ${Math.round(lw * 0.18)}px ${FONT_D}`;
+          this.outlinedText(g, `${d < 0 ? 'FAST' : 'SLOW'} ${d < 0 ? '' : '+'}${Math.round(d * 1000)}ms`, 0, lw * 0.4,
             d < 0 ? '#3fa2ff' : '#ff8f5c', '#ffffff', 4);
         }
         g.restore();
@@ -1512,7 +1515,7 @@ class RhythmGame {
       if (age < 1) {
         const p = age;
         g.save();
-        g.globalAlpha = 1 - p;
+        g.globalAlpha = (1 - p) * ha;
         g.translate(cx, H * 0.43);
         g.scale(1 + easeOut(p) * 0.5, 1 + easeOut(p) * 0.5);
         g.font = `700 ${Math.round(lw * 0.46)}px ${FONT_D}`;

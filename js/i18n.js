@@ -27,6 +27,8 @@ const I18N = (() => {
     '음악 볼륨': ['音楽の音量', 'Music volume'],
     '타격음 볼륨': ['打撃音の音量', 'Hit sound volume'],
     '레인 불투명도': ['レーンの不透明度', 'Lane opacity'],
+    '콤보 · 판정 불투명도': ['コンボ・判定の不透明度', 'Combo / judgment opacity'],
+    '콤보 숫자와 판정 글자의 진하기. 낮추면 노트가 더 잘 보여요': ['コンボ数と判定文字の濃さ。下げるとノーツが見やすくなります', 'How solid the combo count and judgment text are. Lower it to see the notes better.'],
     '노트가 내려오는 가운데 판의 진하기. 낮추면 뒤의 뮤직비디오가 더 잘 보여요': ['ノーツが流れる中央の板の濃さ。下げると後ろのMVがよく見えます', 'How solid the note field is. Lower it to see more of the music video behind.'],
     '곡 검색 · 제목, 한국어 발음도 OK': ['曲名・読み方で検索', 'Search by title or romaji'],
     '정렬': ['並び替え', 'Sort'],
