@@ -4,8 +4,8 @@
  * ========================================================= */
 (() => {
   const $ = (s) => document.querySelector(s);
-  const DIFFS = ['EASY', 'NORMAL', 'HARD'];
-  const DIFF_COL = { EASY: '#4cc85e', NORMAL: '#3fa2ff', HARD: '#ff5b9a' };
+  const DIFFS = ['EASY', 'NORMAL', 'HARD', 'HELL'];
+  const DIFF_COL = { EASY: '#4cc85e', NORMAL: '#3fa2ff', HARD: '#ff8f2e', HELL: '#e8285c' };
   const RANK_COL = { SS: '#ff6fb0', S: '#ffae2e', A: '#ff6fb0', B: '#9a76ff', C: '#3fa2ff', D: '#a39bbf' };
 
   const store = {
@@ -21,8 +21,21 @@
   if (IS_MOBILE) document.body.classList.add('mobile');
   const settings = Object.assign({ laneAlpha: 1, hudAlpha: 0.7, keyMode: IS_MOBILE ? '4k' : '7k', preview: true, vibrate: true, speed: 5.5, offset: 0, music: 0.8, sfx: 0.6, auto: false, skin: DEFAULT_SKIN, hitSound: 'snare' }, store.get('rm_settings', {}));
   const bests = store.get('rm_best', {});
-  const ytList = store.get('rm_yt', []);          // 유튜브 곡 목록 (영상 ID · BPM · 첫 박 ...)
   const customCharts = store.get('rm_charts', {}); // 녹화로 만든 채보 : "곡ID|난이도" → chart
+  // 난이도 4단계로 바뀜 : 예전 HARD 는 지금의 HELL (기록 · 녹화 채보 · 고른 난이도를 한 번만 옮김)
+  if (!store.get('rm_hell_mig', false)) {
+    for (const obj of [bests, customCharts]) {
+      for (const k of Object.keys(obj)) {
+        const m = k.match(/^(.*)\|HARD(\|4k)?$/);
+        if (m) { obj[`${m[1]}|HELL${m[2] || ''}`] = obj[k]; delete obj[k]; }
+      }
+    }
+    store.set('rm_best', bests);
+    store.set('rm_charts', customCharts);
+    if (store.get('rm_diff', 'NORMAL') === 'HARD') store.set('rm_diff', 'HELL');
+    store.set('rm_hell_mig', true);
+  }
+  const ytList = store.get('rm_yt', []);          // 유튜브 곡 목록 (영상 ID · BPM · 첫 박 ...)
   let lastStartOpts = {};
   const ytRemoved = store.get('rm_yt_removed', []); // 사용자가 지운 샘플 곡
   // 샘플 : Mrs. GREEN APPLE 공식 MV (조회수 순). js/songdata.js 에는 목록용 요약만 있고,
@@ -559,7 +572,7 @@
       song.dataP = fetch(`songs/${song.yt.videoId}.json`)
         .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
         .then((j) => {
-          song.designData = { ...song.idx, e: j.e, on: j.on };
+          song.designData = { ...song.idx, e: j.e, on: j.on, v: j.v };
           applyCustom(song);
           if (songs[sel] === song && screen === 'menu') updateDetail();
           return song;
@@ -911,7 +924,7 @@
       if (e.code === 'ArrowUp') { e.preventDefault(); stepSong(-1); }
       else if (e.code === 'ArrowDown') { e.preventDefault(); stepSong(1); }
       else if (e.code === 'ArrowLeft') { e.preventDefault(); setDiff(DIFFS[Math.max(0, DIFFS.indexOf(diff) - 1)]); }
-      else if (e.code === 'ArrowRight') { e.preventDefault(); setDiff(DIFFS[Math.min(2, DIFFS.indexOf(diff) + 1)]); }
+      else if (e.code === 'ArrowRight') { e.preventDefault(); setDiff(DIFFS[Math.min(DIFFS.length - 1, DIFFS.indexOf(diff) + 1)]); }
       else if (e.code === 'Enter') { e.preventDefault(); startGame(); }
     }
   });

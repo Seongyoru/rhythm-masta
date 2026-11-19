@@ -9,9 +9,10 @@
 const ChartGen = (() => {
   const SIDE = [0, 1, 2, 4, 5, 6];
   const DIFF = {
-    EASY:   { nps: 1.4, minGap: 0.30,  streamGap: 0,    spaceGap: 1.6,  jackW: 0.6,  holdGap: 0.9,  holdProb: 0.35, chordProb: 0,    spaceChord: 0 },
-    NORMAL: { nps: 2.9, minGap: 0.16,  streamGap: 0.22, spaceGap: 0.8,  jackW: 0.25, holdGap: 0.75, holdProb: 0.35, chordProb: 0.08, spaceChord: 0.1 },
-    HARD:   { nps: 5.0, minGap: 0.095, streamGap: 0.15, spaceGap: 0.42, jackW: 0.1,  holdGap: 0.6,  holdProb: 0.3,  chordProb: 0.22, spaceChord: 0.3 },
+    EASY:   { nps: 1.4, minGap: 0.30,  streamGap: 0,    spaceGap: 1.6,  jackW: 0.6,  holdGap: 0.8,  holdProb: 0.55, chordProb: 0,    spaceChord: 0 },
+    NORMAL: { nps: 2.6, minGap: 0.17,  streamGap: 0.22, spaceGap: 0.85, jackW: 0.25, holdGap: 0.7,  holdProb: 0.55, chordProb: 0.06, spaceChord: 0.08 },
+    HARD:   { nps: 3.9, minGap: 0.12,  streamGap: 0.18, spaceGap: 0.6,  jackW: 0.15, holdGap: 0.62, holdProb: 0.5,  chordProb: 0.15, spaceChord: 0.2 },
+    HELL:   { nps: 5.0, minGap: 0.095, streamGap: 0.15, spaceGap: 0.42, jackW: 0.1,  holdGap: 0.55, holdProb: 0.45, chordProb: 0.22, spaceChord: 0.3 },
   };
   // 분석 프레임 시간 보정값 (내장 데모곡으로 측정해 맞춤)
   const TIME_CAL = 0;
@@ -25,6 +26,7 @@ const ChartGen = (() => {
       return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
   }
+  const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
   function lowerBound(arr, v) {
     let lo = 0, hi = arr.length;
     while (lo < hi) { const m = (lo + hi) >> 1; if (arr[m] < v) lo = m + 1; else hi = m; }
@@ -130,12 +132,18 @@ const ChartGen = (() => {
    *  - 정박 > 8분 > 16분 순으로 우선, 강한 소리 우선
    *  - 킥 → 스페이스, 스네어 → 1·5번 레인, 하이햇 → 2·4번 레인, 그 외 → 0·6번 레인 (양손 교대)
    *  - 빠른 연타 → 계단 / 트릴 / 롤 패턴
-   *  - 강한 정박 → 대칭 동시치기,  소리가 길게 이어지는 곳 → 롱노트            */
+   *  - 강한 정박 → 대칭 동시치기,  소리가 길게 이어지는 곳 → 롱노트
+   *  - 보컬 데이터(D.v)가 있으면 노래 부르는 마디는 보컬 리듬을 따라간다
+   *    (음이 올라가면 오른쪽, 내려가면 왼쪽 레인 · 길게 끄는 음은 롱노트 · 킥은 스페이스로 박자 받침)
+   *    보컬이 없는 전주 · 간주는 원래대로 드럼 · 반주 리듬                     */
   const DESIGN = {
-    EASY:   { nps: [1.3, 1.8, 2.3], minGap: 0.30, allow: 1, space: 'down', spaceGap: 4.0, chord: 9,    holdGap: 1.5,  holdProb: 0.4,  run: 0 },
-    NORMAL: { nps: [2.5, 3.4, 4.4], minGap: 0.14, allow: 2, space: 'beat', spaceGap: 2.0, chord: 0.86, holdGap: 1.25, holdProb: 0.45, run: 4 },
-    HARD:   { nps: [4.2, 5.8, 7.6], minGap: 0.07, allow: 4, space: 'beat', spaceGap: 1.0, chord: 0.74, holdGap: 1.0,  holdProb: 0.38, run: 16 },
+    // rank : 0 EASY · 1 NORMAL · 2 HARD(노말과 헬 사이) · 3 HELL(예전 HARD)
+    EASY:   { rank: 0, nps: [1.3, 1.8, 2.3], minGap: 0.30, allow: 1, space: 'down', spaceGap: 4.0, chord: 9,    holdGap: 1.2,  holdProb: 0.65, run: 0,  vAllow: 2, vHold: 0.95, vDrum: 0,    vCover: 0.5 },
+    NORMAL: { rank: 1, nps: [2.15, 2.9, 3.75], minGap: 0.155, allow: 2, space: 'beat', spaceGap: 2.0, chord: 0.88, holdGap: 1.0,  holdProb: 0.62, run: 4,  vAllow: 3, vHold: 0.68,  vDrum: 0,    vCover: 0.75 },
+    HARD:   { rank: 2, nps: [3.75, 5.15, 6.7], minGap: 0.10, allow: 3, space: 'beat', spaceGap: 1.0, chord: 0.8,  holdGap: 0.9,  holdProb: 0.62, run: 8,  vAllow: 3, vHold: 0.8,  vDrum: 0.3,  vCover: 0.95 },
+    HELL:   { rank: 3, nps: [4.2, 5.8, 7.6], minGap: 0.07, allow: 4, space: 'beat', spaceGap: 1.0, chord: 0.74, holdGap: 0.72, holdProb: 0.8,  run: 16, vAllow: 3, vHold: 0.75,  vDrum: 0.55, vCover: 1 },
   };
+  const VOC_W = 1.4; // 보컬 마디에서 보컬 소리의 우선도
   function design(D, name, seed, keys) {
     const K4 = keys === 4, SP = K4 ? -1 : 3;
     const P = DESIGN[name];
@@ -165,6 +173,18 @@ const ChartGen = (() => {
     const q40 = sortedE[Math.floor(sortedE.length * 0.4)] || 0, q68 = sortedE[Math.floor(sortedE.length * 0.68)] || 0;
     const tierOf = (b) => { const v = barE[b - firstBar] || 0; return v >= q68 ? 2 : v >= q40 ? 1 : 0; };
 
+    // 보컬 (stride 5 : 시간ms · 세기 · 길이ms · 음높이(MIDI) · 박 위치)
+    const vocs = [];
+    if (D.v) for (let i = 0; i < D.v.length; i += 5) vocs.push({ t: D.v[i] / 1000, s: D.v[i + 1] / 99, dur: D.v[i + 2] / 1000, m: D.v[i + 3], p: D.v[i + 4], b: 1, voc: true });
+    const vocBar = new Set();
+    {
+      const cnt = new Map();
+      for (const o of vocs) if (o.s >= 0.3 && o.m > 0) { const b = barIdx(o.t); cnt.set(b, (cnt.get(b) || 0) + 1); }
+      for (const [b, c] of cnt) if (c >= 3) vocBar.add(b);
+    }
+    const mids = vocs.filter((o) => o.m > 0).map((o) => o.m).sort((a, b) => a - b);
+    const pLo = mids.length ? mids[Math.floor(mids.length * 0.1)] : 60, pHi = mids.length ? Math.max(pLo + 5, mids[Math.floor(mids.length * 0.9)]) : 72;
+
     // 1) 마디마다 노트 고르기
     const POS_W = [1.6, 1.3, 1.0, 0.75, 0.45];
     const BAND_W = [1.15, 1.1, 0.9];
@@ -172,21 +192,34 @@ const ChartGen = (() => {
     const times = [];
     const okGap = (t) => { const i = lowerBound(times, t); return !(i > 0 && t - times[i - 1] < P.minGap) && !(i < times.length && times[i] - t < P.minGap); };
     const byBar = new Map();
+    for (const o of vocs) {
+      if (o.t < D.start || o.t > D.end || o.p > P.vAllow || !vocBar.has(barIdx(o.t))) continue;
+      o.pos = o.p;
+      o.sc = o.s * POS_W[o.pos] * VOC_W;
+      const b = barIdx(o.t);
+      if (!byBar.has(b)) byBar.set(b, []);
+      byBar.get(b).push(o);
+    }
     for (const o of ons) {
       if (o.t < D.start || o.t > D.end) continue;
+      // 보컬 마디 : 킥만 남기고 (어려움은 다른 드럼도 약하게) 보컬을 따라간다
+      const inVoc = vocBar.has(barIdx(o.t));
+      if (inVoc && o.b !== 0 && !P.vDrum) continue;
       o.pos = o.p >= 0 ? o.p : posOf(o.t);
       if (o.pos > P.allow) {
         // 쉬운 난이도는 아주 강한 8분만 예외 허용
-        if (!(name !== 'HARD' && o.pos === P.allow + 1 && o.s >= 0.82 && tierOf(barIdx(o.t)) === 2)) continue;
+        if (!(P.rank < 3 && o.pos === P.allow + 1 && o.s >= 0.82 && tierOf(barIdx(o.t)) === 2)) continue;
       }
-      o.sc = o.s * POS_W[o.pos] * BAND_W[o.b];
+      o.sc = o.s * POS_W[o.pos] * BAND_W[o.b] * (inVoc && o.b !== 0 ? P.vDrum : 1);
       const b = barIdx(o.t);
       if (!byBar.has(b)) byBar.set(b, []);
       byBar.get(b).push(o);
     }
     for (const [b, list] of byBar) {
       const tier = tierOf(b);
-      const budget = Math.max(1, Math.round(P.nps[tier] * barDur * (K4 ? 0.9 : 1) * (0.9 + rnd() * 0.2)));
+      let budget = Math.max(1, Math.round(P.nps[tier] * barDur * (K4 ? 0.9 : 1) * (0.9 + rnd() * 0.2)));
+      // 노래하는 마디 : 보컬 음절을 (난이도만큼) 거의 다 넣는다
+      if (vocBar.has(b)) budget = Math.max(budget, Math.round(list.filter((o) => o.voc).length * P.vCover));
       list.sort((x, y) => y.sc - x.sc);
       let n = 0;
       for (const o of list) {
@@ -222,7 +255,7 @@ const ChartGen = (() => {
       rollL: [0, 1, 2, 1], rollR: [6, 5, 4, 5],
       zig: [0, 4, 1, 5, 2, 6],
     };
-    const runKinds = name === 'HARD' ? ['stairs', 'stairsR', 'trillIn', 'trillMid', 'zig', 'rollL', 'rollR', 'trillOut'] : ['trillIn', 'trillMid', 'stairs', 'stairsR'];
+    const runKinds = P.rank >= 2 ? ['stairs', 'stairsR', 'trillIn', 'trillMid', 'zig', 'rollL', 'rollR', 'trillOut'] : ['trillIn', 'trillMid', 'stairs', 'stairsR'];
     const preferLane = (o, hand) => {
       const side = hand === 0 ? LEFT : RIGHT;
       // 소리 종류 → 레인 (스네어 가운데, 하이햇 안쪽, 그 외 바깥)
@@ -232,14 +265,53 @@ const ChartGen = (() => {
       if (rnd() < 0.25) base = side[Math.floor(rnd() * side.length)];
       return base;
     };
+    const VL = K4 ? [0, 1, 2, 3] : [0, 1, 2, 4, 5, 6];
+    let lastVoc = null, vCenter = 0; // 앞 보컬 음 { t, m, i } · 프레이즈 음높이 중심
+    let sameHand = 0; // 같은 손으로 빠르게 이어 친 횟수
     for (let k = 0; k < chosen.length; k++) {
       const o = chosen[k], t = o.t;
       const dt = t - lastT;
       const nextT = k + 1 < chosen.length ? chosen[k + 1].t : t + 10;
       let lane = -1;
+      if (o.voc && o.m > 0) {
+        // 보컬 : 음높이 → 레인 (높을수록 오른쪽), 앞 음과의 오르내림을 살린다
+        // 프레이즈 중심(최근 음들의 평균)보다 높으면 오른쪽, 낮으면 왼쪽
+        const near = !!lastVoc && t - lastVoc.t < 1.6;
+        vCenter = near ? vCenter * 0.8 + o.m * 0.2 : o.m;
+        const span = K4 ? 6 : 8;
+        let i = Math.round((VL.length - 1) / 2 + ((o.m - vCenter) / span) * (VL.length - 1));
+        i = Math.max(0, Math.min(VL.length - 1, i));
+        if (near) {
+          const dm = o.m - lastVoc.m, li = lastVoc.i;
+          if (dm > 0 && i <= li) i = li + 1;
+          else if (dm < 0 && i >= li) i = li - 1;
+          else if (dm === 0) i = t - lastVoc.t < spb * 1.05 ? li + (li < (VL.length - 1) / 2 ? 1 : -1) : li;
+          // 끝 레인에서 더 올라가거나 내려가면 반대쪽에서 다시 시작 (옥타브 넘김 느낌)
+          if (i >= VL.length) { i = Math.max(0, li - 2); vCenter = o.m + span * 0.35; }
+          if (i < 0) { i = Math.min(VL.length - 1, li + 2); vCenter = o.m - span * 0.35; }
+        }
+        // 치기 편하게 (노트 수는 그대로) : 빠른 음절이 한 손에 3개 넘게 몰리면 반대 손으로,
+        // 한 손 안에서 빠르게 양 끝을 오가면 가운데 손가락 쪽으로
+        const fast = dt < spb * 0.55;
+        if (fast && sameHand >= 2 && handOf(VL[i]) === lastHand) i = VL.length - 1 - i;
+        else if (fast && lastLane >= 0 && lastLane !== SP && handOf(VL[i]) === handOf(lastLane) && Math.abs(VL[i] - lastLane) >= 2) {
+          i = VL.indexOf(lastLane) + (VL[i] > lastLane ? 1 : -1);
+        }
+        const order = VL.map((_, j) => j).sort((a, b) => Math.abs(a - i) - Math.abs(b - i));
+        for (const j of order) {
+          const l = VL[j];
+          if (!free(l, t)) continue;
+          if (t < holdUntil && handOf(l) === holdHand) continue;
+          if (l === lastLane && dt < spb * 0.55) continue;
+          lane = l; i = j; break;
+        }
+        if (lane >= 0) lastVoc = { t, m: o.m, i };
+        run = null;
+      }
       // 스페이스 (킥)
       const spaceOk = P.space === 'down' ? o.pos === 0 && tierOf(barIdx(t)) >= 1 : o.pos <= 1;
-      if (!K4 && o.b === 0 && o.s >= 0.55 && spaceOk && t - lastSpace >= P.spaceGap * spb - 0.01 && free(3, t)) {
+      const vocKick = !o.voc && vocBar.has(barIdx(t));
+      if (lane >= 0 || o.voc) { /* 보컬 레인 이미 정함 */ } else if (!K4 && o.b === 0 && o.s >= 0.55 && spaceOk && t - lastSpace >= P.spaceGap * spb - 0.01 && free(3, t)) {
         lane = 3; run = null;
       } else if (P.run && dt <= g16 * 2.2 + 0.005 && t >= holdUntil) {
         // 연타 패턴
@@ -253,6 +325,8 @@ const ChartGen = (() => {
         }
         run.left--;
       } else run = null;
+      // 보컬 마디의 드럼 : 스페이스(킥)나 마디 첫박 강세만 남긴다 (어려움은 그대로)
+      if (lane < 0 && vocKick && !P.vDrum && !(o.pos === 0 && o.s >= 0.6)) continue;
       if (lane < 0) {
         // 양손 교대 (가끔은 같은 손 연속)
         let hand = rnd() < 0.72 ? 1 - lastHand : lastHand;
@@ -273,7 +347,11 @@ const ChartGen = (() => {
       // 롱노트 : 다음 노트까지 충분히 비어 있고, 그 사이 소리가 이어질 때
       let end = 0;
       const gap = nextT - t;
-      if (lane !== SP || name !== 'HARD') {
+      if (o.voc) {
+        // 길게 끄는 노래 음 → 롱노트
+        const len = Math.floor(Math.min(o.dur, gap - g16 * 1.2, spb * 4) / g16) * g16;
+        if (len >= Math.max(spb * 0.6, 0.32) && rnd() < P.vHold) end = t + len;
+      } else if (lane !== SP || P.rank < 3) {
         if (gap >= P.holdGap * spb) {
           let sus = 0, cnt = 0;
           const e0 = Math.max(1, E(t));
@@ -285,14 +363,14 @@ const ChartGen = (() => {
         }
       }
       // 한 손 롱노트 + 다른 손 연타 (후렴 마디 첫박의 긴 소리)
-      if (!end && name !== 'EASY' && lane !== SP && o.pos === 0 && o.s >= 0.6 && tierOf(barIdx(t)) >= 1 && t >= holdUntil
-        && rnd() < (name === 'HARD' ? 0.4 : 0.22)) {
-        const len = spb * (name === 'HARD' && rnd() < 0.5 ? 3 : 2);
+      if (!end && !o.voc && name !== 'EASY' && lane !== SP && o.pos === 0 && o.s >= 0.6 && tierOf(barIdx(t)) >= 1 && t >= holdUntil
+        && rnd() < [0, 0.3, 0.45, 0.62][P.rank]) {
+        const len = spb * (P.rank >= 2 && rnd() < 0.5 ? 3 : 2);
         let sus = 0, cnt = 0;
         const e0 = Math.max(1, E(t));
         for (let x = t + g16; x < t + len; x += g16) { sus += E(x) >= e0 * 0.55 ? 1 : 0; cnt++; }
         const soon = chosen.slice(k + 1).filter((c) => c.t < t + len).length;
-        if (cnt && sus / cnt >= 0.7 && (name === 'HARD' || soon <= 4)) {
+        if (cnt && sus / cnt >= 0.7 && (P.rank >= 2 || soon <= 4)) {
           end = t + len;
           holdUntil = end + 0.02; holdHand = handOf(lane);
         }
@@ -302,22 +380,25 @@ const ChartGen = (() => {
       lastUse[lane] = t;
 
       // 동시치기 : 강한 정박
-      if (o.s >= P.chord && o.pos <= 1 && tierOf(barIdx(t)) >= (name === 'HARD' ? 1 : 2)) {
+      if (!o.voc && o.s >= P.chord && o.pos <= 1 && tierOf(barIdx(t)) >= (P.rank >= 2 ? 1 : 2)) {
         let m = K4 ? 3 - lane : lane === 3 ? (o.pos === 0 ? (rnd() < 0.5 ? 0 : 6) : -1) : 6 - lane;
         if (m >= 0 && free(m, t) && m !== lane) { notes.push({ t, lane: m }); busy[m] = t + 0.01; }
-        // HARD 후렴 마디 첫박 : 3키 화음 (스페이스 + 양쪽)
-        if (!K4 && name === 'HARD' && o.pos === 0 && o.s >= 0.9 && tierOf(barIdx(t)) === 2 && lane !== 3 && free(3, t) && t - lastSpace >= spb) {
+        // HELL 후렴 마디 첫박 : 3키 화음 (스페이스 + 양쪽)
+        if (!K4 && P.rank === 3 && o.pos === 0 && o.s >= 0.9 && tierOf(barIdx(t)) === 2 && lane !== 3 && free(3, t) && t - lastSpace >= spb) {
           notes.push({ t, lane: 3 }); busy[3] = t + 0.01; lastSpace = t;
         }
       }
-      if (lane === SP) lastSpace = t;
-      else lastHand = handOf(lane);
+      if (lane === SP) { lastSpace = t; sameHand = 0; } else {
+        const h = handOf(lane);
+        sameHand = h === lastHand && dt < spb * 0.55 ? sameHand + 1 : 0;
+        lastHand = h;
+      }
       lastLane = lane; lastT = t;
     }
     return finalize(notes, D.end - D.start, name);
   }
   function designAll(D, seed, keys) {
-    return { EASY: design(D, 'EASY', seed + 1, keys), NORMAL: design(D, 'NORMAL', seed + 2, keys), HARD: design(D, 'HARD', seed + 3, keys) };
+    return { EASY: design(D, 'EASY', seed + 1, keys), NORMAL: design(D, 'NORMAL', seed + 2, keys), HARD: design(D, 'HARD', seed + 4, keys), HELL: design(D, 'HELL', seed + 3, keys) };
   }
 
   /* 7키 채보 → 4키 (설계 데이터가 없는 곡용) : 왼손 0·1·2 → 0·1, 오른손 4·5·6 → 2·3, 스페이스 → 가운데 번갈아 */
@@ -349,7 +430,7 @@ const ChartGen = (() => {
     notes.sort((a, b) => a.t - b.t || a.lane - b.lane);
     const holds = notes.filter((n) => n.end).length;
     const nps = notes.length / Math.max(30, duration);
-    const level = Math.max(1, Math.min(15, Math.round(nps * 2.3 + (name === 'HARD' ? 1 : 0))));
+    const level = Math.max(1, Math.min(15, Math.round(nps * 2.3 + (name === 'HELL' ? 1 : name === 'HARD' ? 0.5 : 0))));
     return { notes, level, count: notes.length, holds, total: notes.length + holds };
   }
 
@@ -397,7 +478,8 @@ const ChartGen = (() => {
     return {
       EASY: build(onsets, duration, 'EASY', seed + 1),
       NORMAL: build(onsets, duration, 'NORMAL', seed + 2),
-      HARD: build(onsets, duration, 'HARD', seed + 3),
+      HARD: build(onsets, duration, 'HARD', seed + 4),
+      HELL: build(onsets, duration, 'HELL', seed + 3),
     };
   }
 

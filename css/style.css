@@ -17,7 +17,8 @@
   --red: #ff6b6b;
   --easy: #4cc85e;
   --normal: #3fa2ff;
-  --hard: #ff5b9a;
+  --hard: #ff8f2e;
+  --hell: #e8285c;
   --card: rgba(255, 255, 255, 0.78);
   --line: rgba(120, 100, 190, 0.14);
   --shadow: 0 18px 50px rgba(120, 90, 200, 0.18), 0 2px 0 rgba(255, 255, 255, 0.9) inset;
@@ -291,12 +292,12 @@ body.in-game #game { display: block; }
   min-height: 18px;
 }
 
-.diffs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.diffs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 .diff {
   --c: var(--normal);
   position: relative;
   display: flex; flex-direction: column; align-items: flex-start; gap: 2px;
-  padding: 14px 18px;
+  padding: 14px 16px;
   border-radius: 22px;
   border: 2.5px solid #fff;
   background: rgba(255, 255, 255, .7);
@@ -307,6 +308,7 @@ body.in-game #game { display: block; }
 }
 .diff.easy { --c: var(--easy); }
 .diff.hard { --c: var(--hard); }
+.diff.hell { --c: var(--hell); }
 .diff span { font: 700 13px var(--fd); letter-spacing: 3px; color: var(--c); }
 .diff b { font: 700 28px var(--fd); color: var(--ink); }
 .diff small { font-size: 12px; color: var(--ink2); }
@@ -723,7 +725,7 @@ body.dk {
 body[data-skin="neon"] {
   --rainbow: linear-gradient(90deg, #38e1ff, #9b8cff, #ff4fd8);
   --apple: #38e1ff; --apple-d: #38e1ff; --pink: #ff4fd8; --sky: #38e1ff; --lemon: #ffc93c;
-  --easy: #4dff9a; --normal: #38b6ff; --hard: #ff4f7b;
+  --easy: #4dff9a; --normal: #38b6ff; --hard: #ffa040; --hell: #ff3d6e;
 }
 body[data-skin="neon"] .screen { background: radial-gradient(1100px 600px at 15% -10%, rgba(122, 92, 255, .38), transparent 60%), radial-gradient(900px 520px at 110% 110%, rgba(255, 79, 216, .25), transparent 60%), linear-gradient(180deg, #070818, #0c0722); }
 body[data-skin="neon"] .blob { opacity: .3; }
@@ -1080,7 +1082,7 @@ body.mobile .start small, body.mobile .btn small { display: none; }
   .jacket { width: 110px; height: 110px; border-radius: 24px; }
   .jacket span { font-size: 54px; }
   .detail-info h1 { font-size: 26px; }
-  .diffs { gap: 8px; }
+  .diffs { gap: 8px; grid-template-columns: repeat(2, 1fr); }
   .diff { padding: 10px 12px; }
   .diff b { font-size: 22px; }
   .diff small { font-size: 10.5px; }

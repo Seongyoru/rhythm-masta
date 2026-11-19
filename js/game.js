@@ -30,6 +30,16 @@ let SPACE_LANE = 3;
 const LANE_COLORS = SKINS[DEFAULT_SKIN].lanes.slice();
 const PALETTE = SKINS[DEFAULT_SKIN].palette.slice();
 const JW = { PERFECT: 0.042, GREAT: 0.085, GOOD: 0.130, POOR: 0.170 };
+// 피버 (DJMAX 식) : 칠 때마다 게이지가 차고, 가득 차면 x2 → x5. 피버 중에는 노트 하나에 콤보가 배수만큼 오른다. MISS 면 풀림
+const FEVER_GAIN = { PERFECT: 1 / 28, GREAT: 1 / 40, GOOD: 1 / 80 };
+const FEVER_MAX = 5;
+const FEVER_COL = ['#ffffff', '#3fd0ff', '#5be37a', '#ffb52e', '#ff4f8b'];
+const FEVER_GAUGE_ALPHA = 0.55; // 게이지는 기본 반투명 (콤보 · 판정 불투명도 설정에 곱함)
+// 콤보 · 피버 게이지 크기 (레인 폭 배수). 4키는 레인이 넓어서 작게
+const HUD_SIZE = {
+  7: { pop: 0.2, label: 0.2, labelY: 0.64, ls: 5, num: 0.92, stroke: [6, 4], gaugeY: 0.56, gw: 2.3, gh: 0.16, ghMin: 9, pip: 0.36, pipMin: 3, upY: 1.55, upFont: 0.34, comboY: 0.3, judge: 0.46, jdiff: 0.18, jdiffY: 0.4, mile: 0.46 },
+  4: { pop: 0.1, label: 0.13, labelY: 0.41, ls: 3, num: 0.56, stroke: [4, 3], gaugeY: 0.34, gw: 1.2, gh: 0.08, ghMin: 5, pip: 0.3, pipMin: 2, upY: 0.82, upFont: 0.21, comboY: 0.25, judge: 0.36, jdiff: 0.14, jdiffY: 0.31, mile: 0.36 },
+};
 const JUDGES = {
   PERFECT: { w: 1.0, color: '#4fb8ff', label: 'PERFECT' },
   GREAT:   { w: 0.7, color: '#4cc85e', label: 'GREAT' },
@@ -712,8 +722,11 @@ class RhythmGame {
     const chart = this.rec ? { notes: [], total: 0 } : song.charts[diff];
     this.notes = chart.notes.map((n) => ({
       t: n.t, lane: n.lane, end: n.end || 0,
-      judged: false, holding: false, missed: false, tailDone: !n.end,
+      judged: false, holding: false, missed: false, tailDone: !n.end, ticks: 0,
     }));
+    // DJMAX 식 롱노트 콤보 : 누르고 있는 동안 1/8박마다 콤보 +1 (점수 · 정확도와는 별개)
+    const bpm = song.bpm || (song.grid && song.grid.bpm) || 120;
+    this.tickDt = Math.max(0.045, 60 / bpm / 8);
     this.laneNotes = Array.from({ length: this.N }, () => []);
     for (const n of this.notes) this.laneNotes[n.lane].push(n);
     this.laneIdx = new Array(this.N).fill(0);
@@ -729,6 +742,7 @@ class RhythmGame {
     this.lastJudge = null;
     this.comboPopT = -1e9;
     this.milestone = null;
+    this.fever = 1; this.feverG = 0; this.feverUp = null; this.feverDisp = 0;
     this.missAt = -1e9;
     this.particles.length = 0;
     this.fx.length = 0;
@@ -853,6 +867,10 @@ class RhythmGame {
           this.judge('MISS', null, l);
           if (n.end) { n.tailDone = true; this.judge('MISS', null, l, true); }
         }
+        if (n.holding) {
+          const k = Math.floor((Math.min(t, n.end) - n.t) / this.tickDt);
+          if (k > n.ticks) { this.addCombo((k - n.ticks) * this.fever); n.ticks = k; this.holdTickFx(l); }
+        }
         if (n.holding && t >= n.end) {
           n.holding = false; n.tailDone = true;
           this.holdHook(l, false);
@@ -948,19 +966,129 @@ class RhythmGame {
     this.sumW += JUDGES[kind].w;
     if (kind === 'MISS') {
       this.combo = 0;
+      this.fever = 1; this.feverG = 0;
       this.missAt = now;
       this.laneMissT[lane] = now;
     } else {
-      this.combo++;
-      this.comboPopT = now;
-      if (this.combo > this.maxCombo) this.maxCombo = this.combo;
-      if (this.combo % 100 === 0) this.milestone = { n: this.combo, at: now };
+      this.addCombo(this.rec ? 1 : this.fever);
+      if (!this.rec) this.feverGain(kind);
     }
     if (diff !== null && !isTail) {
       this.errs.push(diff);
       if (kind !== 'PERFECT' && kind !== 'MISS') { if (diff < 0) this.fast++; else this.slow++; }
     }
     this.lastJudge = { kind, at: now, diff: isTail ? null : diff };
+  }
+
+  addCombo(k) {
+    const now = performance.now(), before = this.combo;
+    this.combo += k;
+    this.comboPopT = now;
+    if (this.combo > this.maxCombo) this.maxCombo = this.combo;
+    if (Math.floor(this.combo / 100) > Math.floor(before / 100)) this.milestone = { n: Math.floor(this.combo / 100) * 100, at: now };
+  }
+  feverGain(kind) {
+    if (this.fever >= FEVER_MAX) { this.feverG = 1; return; }
+    this.feverG += FEVER_GAIN[kind] || 0;
+    if (this.feverG >= 1) {
+      this.fever++; this.feverG = this.fever >= FEVER_MAX ? 1 : 0;
+      this.feverUp = { m: this.fever, at: performance.now() };
+    }
+  }
+  // 반투명 HUD : 따로 마련한 캔버스의 box 영역(CSS px)에 alpha 1 로 그린 뒤, 그 영역을 alpha 로 한 번에 얹는다
+  layered(g, alpha, box, draw) {
+    if (alpha <= 0.003) return;
+    if (alpha >= 0.999) { g.save(); draw(g); g.restore(); return; }
+    const dpr = this.dpr;
+    if (!this._layerCv) { this._layerCv = document.createElement('canvas'); this._layerG = this._layerCv.getContext('2d'); }
+    const cv = this._layerCv, q = this._layerG;
+    if (cv.width !== this.cv.width || cv.height !== this.cv.height) { cv.width = this.cv.width; cv.height = this.cv.height; }
+    const x = Math.max(0, Math.floor(box[0])), y = Math.max(0, Math.floor(box[1]));
+    const w = Math.min(this.W - x, Math.ceil(box[2])), h = Math.min(this.H - y, Math.ceil(box[3]));
+    if (w <= 0 || h <= 0) return;
+    const X = Math.floor(x * dpr), Y = Math.floor(y * dpr), Wd = Math.ceil(w * dpr), Hd = Math.ceil(h * dpr);
+    q.setTransform(1, 0, 0, 1, 0, 0);
+    q.globalAlpha = 1;
+    q.clearRect(X, Y, Wd, Hd);
+    q.setTransform(dpr, 0, 0, dpr, 0, 0);
+    q.save();
+    q.beginPath(); q.rect(x, y, w, h); q.clip();
+    draw(q);
+    q.restore();
+    g.save();
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.globalAlpha = alpha;
+    g.drawImage(cv, X, Y, Wd, Hd, X, Y, Wd, Hd);
+    g.restore();
+  }
+  // 피버 게이지 : 캡슐 막대(다음 단계 색으로 차오름 · 흐르는 빛줄기 · 윤기) + 아래 단계 점 4개(x2~x5)
+  drawFeverGauge(g, cx, y, lw, now, ha) {
+    const fv = this.fever, max = fv >= FEVER_MAX;
+    if (this.feverG < this.feverDisp - 0.02) this.feverDisp = this.feverG; // 단계 오름 · MISS → 바로 비움
+    else this.feverDisp += (this.feverG - this.feverDisp) * 0.25;        // 차오를 땐 부드럽게
+    const S = HUD_SIZE[this.N >= 7 ? 7 : 4];
+    const w = lw * S.gw, h = Math.max(S.ghMin, Math.round(lw * S.gh)), x = cx - w / 2;
+    const up = this.feverUp ? Math.max(0, 1 - (now - this.feverUp.at) / 260) : 0;
+    const cur = fv > 1 ? FEVER_COL[fv - 1] : '#c9f5b8', next = max ? cur : FEVER_COL[fv];
+    g.save();
+    g.globalAlpha = ha;
+    const s = 1 + up * 0.1;
+    g.translate(cx, y + h / 2); g.scale(s, s); g.translate(-cx, -(y + h / 2));
+    // 바탕
+    g.fillStyle = 'rgba(16, 28, 18, 0.5)';
+    rr(g, x, y, w, h, h / 2); g.fill();
+    // 채움
+    g.save();
+    rr(g, x, y, w, h, h / 2); g.clip();
+    const fw = max ? w : w * this.feverDisp;
+    if (fw > 0.5) {
+      let fill;
+      if (max) {
+        // x5 : 단계 색들이 옆으로 흐르는 진한 무지개
+        const off = (now / 5) % w, cols = ['#3fd0ff', '#5be37a', '#ffb52e', '#ff4f8b', '#b06bff'];
+        fill = g.createLinearGradient(x - off, 0, x - off + w * 2, 0);
+        for (let i = 0; i <= 10; i++) fill.addColorStop(i / 10, cols[i % cols.length]);
+      }
+      else { fill = g.createLinearGradient(x, 0, x + w, 0); fill.addColorStop(0, cur); fill.addColorStop(1, next); }
+      g.fillStyle = fill;
+      g.fillRect(x, y, fw, h);
+      // 흐르는 빛줄기
+      g.globalAlpha = ha * (max ? 0.22 : fv > 1 ? 0.38 : 0.22);
+      g.fillStyle = '#ffffff';
+      const step = h * 2.6, off = (now / (max ? 7 : 13)) % step;
+      for (let sx = x - step + off; sx < x + fw; sx += step) {
+        g.beginPath(); g.moveTo(sx, y + h); g.lineTo(sx + h, y); g.lineTo(sx + h * 1.7, y); g.lineTo(sx + h * 0.7, y + h); g.closePath(); g.fill();
+      }
+      // 끝부분 반짝 점
+      if (!max) { g.globalAlpha = ha * 0.9; g.beginPath(); g.arc(x + fw, y + h / 2, h * 0.42, 0, Math.PI * 2); g.fill(); }
+      g.globalAlpha = ha;
+    }
+    // 윗면 윤기
+    g.fillStyle = 'rgba(255,255,255,0.22)';
+    g.fillRect(x, y + 1, w, h * 0.3);
+    g.restore();
+    // 테두리 (x5 는 빛남)
+    g.lineWidth = 1.5;
+    g.strokeStyle = 'rgba(255,255,255,0.9)';
+    if (max) { g.shadowColor = '#ffffff'; g.shadowBlur = 7 + Math.sin(now / 110) * 3; }
+    rr(g, x, y, w, h, h / 2); g.stroke();
+    g.shadowBlur = 0;
+    // 단계 점 : x2 · x3 · x4 · x5
+    const n = FEVER_MAX - 1, pr = Math.max(S.pipMin, h * S.pip), gap = pr * 3.3;
+    for (let i = 0; i < n; i++) {
+      const px = cx + (i - (n - 1) / 2) * gap, py = y + h + pr * 2.3;
+      const on = i < fv - 1;
+      g.beginPath(); g.arc(px, py, on ? pr * 1.12 : pr, 0, Math.PI * 2);
+      g.fillStyle = on ? FEVER_COL[i + 1] : 'rgba(16, 28, 18, 0.45)';
+      g.fill();
+      g.lineWidth = 1; g.strokeStyle = 'rgba(255,255,255,0.9)'; g.stroke();
+    }
+    g.restore();
+  }
+  // 롱노트를 누르고 있는 동안 콤보가 오를 때 작은 반짝임
+  holdTickFx(lane) {
+    if (Math.random() < 0.5) return;
+    this.spawnParticles(this.laneC[lane], this.judgeY, LANE_COLORS[lane], 2, 0.6, this.laneW[lane] * 0.6, false);
   }
 
   /* ---------------- 이펙트 ---------------- */
@@ -1462,24 +1590,53 @@ class RhythmGame {
     // 콤보 · 판정 글자 불투명도 (설정) — 노트를 가리지 않게 기본은 살짝 투명
     const ha = this.settings && typeof this.settings.hudAlpha === 'number' ? clamp(this.settings.hudAlpha, 0.1, 1) : 0.7;
 
+    // 콤보 · 피버 게이지 · 판정 글자는 각각 따로 불투명하게 완성한 뒤 통째로 투명도를 준다 (layered)
+    // → 흰 테두리 위에 글자를 겹쳐 그린 부분이 반투명할 때 비쳐 보이지 않게
+    const S = HUD_SIZE[this.N >= 7 ? 7 : 4];
+    const lsOn = (c, v) => { if ('letterSpacing' in c) c.letterSpacing = v; };
+    const fx0 = this.fieldX - 30, fw0 = this.fieldW + 60;
+    const comboY = H * S.comboY;
+
     // 콤보
     if (this.combo >= 3) {
       const pop = Math.max(0, 1 - (now - this.comboPopT) / 160);
-      const s = 1 + pop * 0.2;
-      g.save();
-      g.globalAlpha = ha;
-      g.translate(cx, H * 0.3);
-      g.scale(s, s);
-      const gold = this.combo >= 100;
-      g.font = `600 ${Math.round(lw * 0.2)}px ${FONT_D}`;
-      ls('5px');
-      g.fillStyle = gold ? '#ffcf4a' : this.sk.comboLabel;
-      g.fillText(this.rec ? 'NOTES' : 'COMBO', 0, -lw * 0.64);
-      ls('0px');
-      g.font = `700 ${Math.round(lw * 0.92)}px ${FONT_D}`;
-      const fill = gold ? rainbowGrad(g, -lw, lw) : this.sk.comboFill;
-      this.outlinedText(g, String(this.combo), 0, 0, fill, gold ? '#ffffff' : this.sk.comboStroke, gold ? 6 : 4);
-      g.restore();
+      const s = 1 + pop * S.pop;
+      this.layered(g, ha, [fx0, comboY - lw * 1.2, fw0, lw * 2.1], (c) => {
+        c.textAlign = 'center'; c.textBaseline = 'middle';
+        c.translate(cx, comboY);
+        c.scale(s, s);
+        const gold = this.combo >= 100;
+        c.font = `600 ${Math.round(lw * S.label)}px ${FONT_D}`;
+        lsOn(c, `${S.ls}px`);
+        const fv = this.rec ? 1 : this.fever;
+        c.fillStyle = fv > 1 ? FEVER_COL[fv - 1] : gold ? '#ffcf4a' : this.sk.comboLabel;
+        if (fv > 1) this.outlinedText(c, `FEVER x${fv}`, 0, -lw * S.labelY, FEVER_COL[fv - 1], '#ffffff', 3);
+        else c.fillText(this.rec ? 'NOTES' : 'COMBO', 0, -lw * S.labelY);
+        lsOn(c, '0px');
+        c.font = `700 ${Math.round(lw * S.num)}px ${FONT_D}`;
+        const fill = gold ? rainbowGrad(c, -lw, lw) : this.sk.comboFill;
+        this.outlinedText(c, String(this.combo), 0, 0, fill, gold ? '#ffffff' : this.sk.comboStroke, S.stroke[gold ? 0 : 1]);
+      });
+    }
+    // 피버 게이지 (콤보 아래, 기본 반투명)
+    if (!this.rec && (this.combo >= 3 || this.fever > 1)) {
+      const gy = comboY + lw * S.gaugeY;
+      this.layered(g, ha * FEVER_GAUGE_ALPHA, [fx0, gy - lw * 0.3, fw0, lw * 0.9], (c) => this.drawFeverGauge(c, cx, gy, lw, now, 1));
+    }
+    // 피버 단계가 오를 때 : "FEVER x3!"
+    if (this.feverUp) {
+      const age = (now - this.feverUp.at) / 1000;
+      if (age < 0.9) {
+        const y = comboY - lw * S.upY - age * 24;
+        this.layered(g, (1 - age / 0.9) * ha, [fx0, y - lw * 0.7, fw0, lw * 1.4], (c) => {
+          c.textAlign = 'center'; c.textBaseline = 'middle';
+          c.translate(cx, y);
+          c.scale(1 + easeOut(Math.min(1, age * 4)) * 0.25, 1 + easeOut(Math.min(1, age * 4)) * 0.25);
+          c.font = `700 ${Math.round(lw * S.upFont)}px ${FONT_D}`;
+          const m = this.feverUp.m;
+          this.outlinedText(c, `FEVER x${m}!`, 0, 0, m >= FEVER_MAX ? rainbowGrad(c, -lw, lw) : FEVER_COL[m - 1], '#ffffff', 5);
+        });
+      } else this.feverUp = null;
     }
 
     // 판정 텍스트 (스티커 느낌)
@@ -1489,23 +1646,24 @@ class RhythmGame {
         const kind = this.lastJudge.kind, j = JUDGES[kind];
         const pop = Math.max(0, 1 - age / 0.1);
         const a = age < 0.4 ? 1 : 1 - (age - 0.4) / 0.2;
-        g.save();
-        g.globalAlpha = a * ha;
-        g.translate(cx, this.judgeY - H * 0.21 - (1 - pop) * 4);
-        g.rotate(kind === 'MISS' ? -0.06 : 0);
-        g.scale(1 + pop * 0.3, 1 + pop * 0.3);
-        g.font = `700 ${Math.round(lw * 0.46)}px ${FONT_D}`;
-        ls('2px');
-        const fill = kind === 'PERFECT' ? rainbowGrad(g, -lw * 1.3, lw * 1.3) : j.color;
-        this.outlinedText(g, j.label, 0, 0, fill, '#ffffff', 6);
-        ls('0px');
-        const d = this.lastJudge.diff;
-        if (d !== null && kind !== 'PERFECT' && kind !== 'MISS') {
-          g.font = `600 ${Math.round(lw * 0.18)}px ${FONT_D}`;
-          this.outlinedText(g, `${d < 0 ? 'FAST' : 'SLOW'} ${d < 0 ? '' : '+'}${Math.round(d * 1000)}ms`, 0, lw * 0.4,
-            d < 0 ? '#3fa2ff' : '#ff8f5c', '#ffffff', 4);
-        }
-        g.restore();
+        const y = this.judgeY - H * 0.21 - (1 - pop) * 4;
+        this.layered(g, a * ha, [fx0, y - lw * 0.9, fw0, lw * 1.9], (c) => {
+          c.textAlign = 'center'; c.textBaseline = 'middle';
+          c.translate(cx, y);
+          c.rotate(kind === 'MISS' ? -0.06 : 0);
+          c.scale(1 + pop * 0.3, 1 + pop * 0.3);
+          c.font = `700 ${Math.round(lw * S.judge)}px ${FONT_D}`;
+          lsOn(c, '2px');
+          const fill = kind === 'PERFECT' ? rainbowGrad(c, -lw * 1.3, lw * 1.3) : j.color;
+          this.outlinedText(c, j.label, 0, 0, fill, '#ffffff', 6);
+          lsOn(c, '0px');
+          const d = this.lastJudge.diff;
+          if (d !== null && kind !== 'PERFECT' && kind !== 'MISS') {
+            c.font = `600 ${Math.round(lw * S.jdiff)}px ${FONT_D}`;
+            this.outlinedText(c, `${d < 0 ? 'FAST' : 'SLOW'} ${d < 0 ? '' : '+'}${Math.round(d * 1000)}ms`, 0, lw * S.jdiffY,
+              d < 0 ? '#3fa2ff' : '#ff8f5c', '#ffffff', 4);
+          }
+        });
       }
     }
 
@@ -1514,13 +1672,13 @@ class RhythmGame {
       const age = (now - this.milestone.at) / 1000;
       if (age < 1) {
         const p = age;
-        g.save();
-        g.globalAlpha = (1 - p) * ha;
-        g.translate(cx, H * 0.43);
-        g.scale(1 + easeOut(p) * 0.5, 1 + easeOut(p) * 0.5);
-        g.font = `700 ${Math.round(lw * 0.46)}px ${FONT_D}`;
-        this.outlinedText(g, `${this.milestone.n} COMBO!`, 0, 0, rainbowGrad(g, -lw * 2, lw * 2), '#ffffff', 7);
-        g.restore();
+        this.layered(g, (1 - p) * ha, [fx0 - lw, H * 0.43 - lw * 1.3, fw0 + lw * 2, lw * 2.6], (c) => {
+          c.textAlign = 'center'; c.textBaseline = 'middle';
+          c.translate(cx, H * 0.43);
+          c.scale(1 + easeOut(p) * 0.5, 1 + easeOut(p) * 0.5);
+          c.font = `700 ${Math.round(lw * S.mile)}px ${FONT_D}`;
+          this.outlinedText(c, `${this.milestone.n} COMBO!`, 0, 0, rainbowGrad(c, -lw * 2, lw * 2), '#ffffff', 7);
+        });
         if (age < dt * 1.5) this.spawnParticles(cx, H * 0.43, '#ffffff', 18, 0.9, this.fieldW * 0.6, true);
       }
     }
@@ -1666,7 +1824,7 @@ class RhythmGame {
       const cw = Math.min(lx - 24, 300), cx0 = lx - cw, ix = lx - 20;
       this.card(g, cx0, 30, cw, s.bpm ? 130 : 108);
       g.textAlign = 'right';
-      const dcol = { EASY: '#4cc85e', NORMAL: '#3fa2ff', HARD: '#ff5b9a' }[this.diff];
+      const dcol = { EASY: '#4cc85e', NORMAL: '#3fa2ff', HARD: '#ff8f2e', HELL: '#e8285c' }[this.diff];
       g.font = `700 12px ${FONT_D}`;
       const tag = `${this.diff}  LV.${s.charts[this.diff].level}`;
       const tw = g.measureText(tag).width + 20;
