@@ -144,7 +144,7 @@ const ShareCard = (() => {
 
     // 난이도 + 제목
     const lv = r.song.charts && r.song.charts[r.diff] ? r.song.charts[r.diff].level : '';
-    pill(ctx, L, 132, `${r.diff}${lv !== '' ? `  LV.${lv}` : ''}`, r.diffColor || '#3fa2ff', { size: 17, h: 34 });
+    pill(ctx, L, 132, `${r.keys === '4k' ? '4K' : '7K'}  ${r.diff}${lv !== '' ? `  LV.${lv}` : ''}`, r.diffColor || '#3fa2ff', { size: 17, h: 34 });
     const ft = fitTitle(ctx, title, 590);
     ctx.fillStyle = INK; ctx.font = titleFont(title, ft.size); spaced(ctx, 0);
     if (ft.lines.length === 1) ctx.fillText(ft.lines[0], L, 232);
@@ -235,7 +235,7 @@ const ShareCard = (() => {
   function shareText(r) {
     const lv = r.song.charts && r.song.charts[r.diff] ? r.song.charts[r.diff].level : '';
     const badge = r.ap ? ' · ALL PERFECT' : r.fc ? ' · FULL COMBO' : '';
-    return T('🍏 RHYTHM MASTA 에서 「{title}」 {diff} LV.{lv} 플레이!', { title: r.song.title, diff: r.diff, lv })
+    return T('🍏 RHYTHM MASTA 에서 「{title}」 {diff} LV.{lv} 플레이!', { title: r.song.title, diff: `${r.keys === '4k' ? '4K' : '7K'} ${r.diff}`, lv })
       + `\nRANK ${r.rank} · SCORE ${String(r.score).padStart(7, '0')} · ${r.acc.toFixed(2)}%${badge}\n#RHYTHMMASTA`;
   }
   const fileOf = () => new File([cur.blob], `rhythm-masta-${Date.now()}.png`, { type: 'image/png' });

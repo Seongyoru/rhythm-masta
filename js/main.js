@@ -805,7 +805,7 @@
   function showResult(r) {
     if (screen !== 'game') return;
     if (r.record) { saveRecording(r); toMenu(); return; }
-    $('#resDiff').textContent = `${r.diff}  ·  LV.${r.song.charts[r.diff].level}`;
+    $('#resDiff').textContent = `${r.keys === '4k' ? '4K' : '7K'}  ·  ${r.diff}  ·  LV.${r.song.charts[r.diff].level}`;
     $('#resDiff').style.color = DIFF_COL[r.diff];
     $('#resTitle').textContent = r.song.title;
     const rk = $('#resRank');

@@ -835,7 +835,7 @@ class RhythmGame {
       score: this.score(), acc, rank, counts: { ...this.counts }, maxCombo: this.maxCombo,
       fast: this.fast, slow: this.slow, avgErr: avgErr * 1000, total: this.total,
       fc: this.counts.MISS === 0, ap: this.counts.MISS === 0 && this.counts.GREAT === 0 && this.counts.GOOD === 0,
-      auto: !!this.settings.auto, song: this.song, diff: this.diff,
+      auto: !!this.settings.auto, song: this.song, diff: this.diff, keys: this.modeId,
     };
     this._endTimer = setTimeout(() => {
       this._endTimer = 0;
