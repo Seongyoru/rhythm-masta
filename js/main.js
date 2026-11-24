@@ -459,7 +459,8 @@
   /* ---------------- 패치 안내 (js/patches.js) ---------------- */
   // 처음 온 사람, 마지막으로 본 패치 뒤에 새 패치가 나온 사람에게 맨 위 패치를 한 번 보여준다
   let patchOpen = false;
-  var LATEST = (typeof PATCHES !== 'undefined' && PATCHES[0]) || null;
+  // 배포 직후 예전 index.html 이 캐시에 남아 팝업 자리가 없으면 건너뛴다 (나머지 초기화가 멈추지 않게)
+  var LATEST = (typeof PATCHES !== 'undefined' && PATCHES[0] && $('#patchModal') && $('#patchClose')) ? PATCHES[0] : null;
   const patchDay = (d) => d.replace(/-/g, '.');
   function renderPatchLabels() {
     if (!LATEST) return;
@@ -481,13 +482,19 @@
     if (LATEST) store.set('rm_patch_seen', LATEST.date);
   }
   document.querySelectorAll('[data-patch]').forEach((b) => b.addEventListener('click', openPatch));
-  $('#patchClose').addEventListener('click', closePatch);
-  $('#patchModal').addEventListener('click', (e) => { if (e.target.id === 'patchModal') closePatch(); });
+  if (LATEST) {
+    $('#patchClose').addEventListener('click', closePatch);
+    $('#patchModal').addEventListener('click', (e) => { if (e.target.id === 'patchModal') closePatch(); });
+  }
   renderPatchLabels();
   if (LATEST && store.get('rm_patch_seen', '') < LATEST.date) {
     // 이미지를 먼저 받아 두고 띄워서 빈 팝업이 보이지 않게
     const pre = new Image();
-    pre.onload = pre.onerror = () => { if (!patchOpen) openPatch(); };
+    // 이미지가 늦게 와도 게임 중이거나 다른 창이 열려 있으면 띄우지 않는다 (다음 접속 때 보여줌)
+    pre.onload = pre.onerror = () => {
+      if (patchOpen || screen !== 'menu' || starting || document.querySelector('.overlay.show')) return;
+      openPatch();
+    };
     pre.src = LATEST.img;
   }
 
