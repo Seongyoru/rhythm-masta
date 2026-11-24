@@ -225,6 +225,7 @@
     </section>
     <div class="visits visits-m" data-visits hidden title="방문자 수" aria-label="방문자 수"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg><span>오늘</span> <b data-v="today">0</b><i></i><span>누적</span> <b data-v="total">0</b></div>
     <button type="button" class="disclaimer-m" data-notice>비공식 팬메이드 · 비영리 · Mrs. GREEN APPLE 및 소속사와 관계없음<br>영상은 유튜브 공식 채널에서 재생돼요 · <u>저작권 및 이용 안내</u></button>
+    <button type="button" class="patch-date-m" data-patch hidden></button>
   </main>
 
   <footer class="keyguide">
@@ -243,6 +244,7 @@
       <span><kbd>Enter</kbd> 시작</span>
       <span><kbd>Esc</kbd> 일시정지</span>
       <span>게임 중 <kbd>↑</kbd><kbd>↓</kbd> 속도 조절</span>
+      <button type="button" class="patch-date" data-patch hidden></button>
     </div>
   </footer>
 </div>
@@ -413,6 +415,14 @@
   </div>
 </div>
 
+<!-- ============ 패치 안내 (js/patches.js) ============ -->
+<div id="patchModal" class="overlay">
+  <div class="patch-card">
+    <img id="patchImg" alt="">
+    <div class="patch-foot"><span id="patchDate"></span><button class="btn primary" id="patchClose">확인</button></div>
+  </div>
+</div>
+
 <div id="dropZone"><div>여기에 놓으면 곡이 추가돼요</div></div>
 <div id="toast"></div>
 
@@ -424,6 +434,7 @@
 <script src="js/demo.js"></script>
 <script src="js/chart.js"></script>
 <script src="js/songdata.js"></script>
+<script src="js/patches.js"></script>
 <script src="js/game.js"></script>
 <script src="js/share.js"></script>
 <script src="js/main.js"></script>

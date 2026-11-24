@@ -434,6 +434,7 @@
     if (songs.length) updateDetail();
     renderSkins();
     renderKeyguide();
+    if (typeof renderPatchLabels === 'function') renderPatchLabels();
     const hs = $('#setHitSound'), cur = hs.value;
     hs.innerHTML = Object.entries(AudioEngine.SFX_KINDS).map(([k, v]) => `<option value="${k}">${T(v)}</option>`).join('');
     hs.value = cur;
@@ -454,6 +455,41 @@
   document.querySelectorAll('[data-notice]').forEach((b) => b.addEventListener('click', openNotice));
   $('#noticeClose').addEventListener('click', closeNotice);
   $('#noticeModal').addEventListener('click', (e) => { if (e.target.id === 'noticeModal') closeNotice(); });
+
+  /* ---------------- 패치 안내 (js/patches.js) ---------------- */
+  // 처음 온 사람, 마지막으로 본 패치 뒤에 새 패치가 나온 사람에게 맨 위 패치를 한 번 보여준다
+  let patchOpen = false;
+  var LATEST = (typeof PATCHES !== 'undefined' && PATCHES[0]) || null;
+  const patchDay = (d) => d.replace(/-/g, '.');
+  function renderPatchLabels() {
+    if (!LATEST) return;
+    document.querySelectorAll('[data-patch]').forEach((b) => { b.hidden = false; b.textContent = T('최근 패치 {d}', { d: patchDay(LATEST.date) }); });
+    $('#patchDate').textContent = T('{d} 패치', { d: patchDay(LATEST.date) });
+  }
+  function openPatch() {
+    if (!LATEST) return;
+    const img = $('#patchImg');
+    if (img.getAttribute('src') !== LATEST.img) img.src = LATEST.img;
+    img.alt = LATEST.alt || '';
+    renderPatchLabels();
+    patchOpen = true;
+    $('#patchModal').classList.add('show');
+  }
+  function closePatch() {
+    patchOpen = false;
+    $('#patchModal').classList.remove('show');
+    if (LATEST) store.set('rm_patch_seen', LATEST.date);
+  }
+  document.querySelectorAll('[data-patch]').forEach((b) => b.addEventListener('click', openPatch));
+  $('#patchClose').addEventListener('click', closePatch);
+  $('#patchModal').addEventListener('click', (e) => { if (e.target.id === 'patchModal') closePatch(); });
+  renderPatchLabels();
+  if (LATEST && store.get('rm_patch_seen', '') < LATEST.date) {
+    // 이미지를 먼저 받아 두고 띄워서 빈 팝업이 보이지 않게
+    const pre = new Image();
+    pre.onload = pre.onerror = () => { if (!patchOpen) openPatch(); };
+    pre.src = LATEST.img;
+  }
 
   /* ---------------- 키 설정 (PC) ---------------- */
   let keyBindOpen = false, bindLane = -1;
@@ -882,6 +918,7 @@
   const evTime = (e) => (Math.abs(e.timeStamp - performance.now()) < 1000 ? e.timeStamp : performance.now());
 
   window.addEventListener('keydown', (e) => {
+    if (patchOpen) { if (e.code === 'Escape' || e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); closePatch(); } return; }
     if (noticeOpen) { if (e.code === 'Escape' || e.code === 'Enter') { e.preventDefault(); closeNotice(); } return; }
     if (keyBindOpen) { keyBindKey(e); return; }
     if (modalOpen) { ytModalKey(e); return; }
